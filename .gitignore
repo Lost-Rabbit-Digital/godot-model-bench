@@ -26,6 +26,9 @@ submissions_round7/*/
 # MP4 recordings (large binary files)
 results/recordings/
 
+# Viewer screenshot/texture artifacts
+tests/viewer_shots/
+
 # Debug/test scripts
 debug_test.gd
 debug_test2.gd

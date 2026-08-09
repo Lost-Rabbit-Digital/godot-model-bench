@@ -70,6 +70,57 @@ reasoning-only/truncation failures on complex rounds).
 - **Time points (0-10 pts)**: normalized within the field (faster = more points)
 - **Lint (0-10 pts)**: gdlint score (fewer style issues = more points)
 
+## Interactive Submission Viewer
+
+A Godot UI to run and observe any round's model submission live, instead of
+just headless test results. It stages a chosen submission into the round's live
+dir and drives it with a per-round visualization.
+
+```bash
+godot --path .                          # open the viewer menu (rounds -> models)
+godot --path . -- --round 3 --model meta_muse-spark-1.2   # jump straight into a round
+godot --path . -- --round 7 --model reference             # run the reference
+```
+
+Each round gets a visualization tailored to its submission type:
+
+| Round | What the viewer shows |
+|-------|------------------------|
+| 1 | Hive hexagon with honey fill, worker bees, season wheel; tick/harvest/buy buttons + auto-tick |
+| 2 | Greenhouse frame, live temperature/heater, sprinkler drops; temp-set and report buttons |
+| 3 | Galton-board physics: drawn pegs + bouncy balls falling through; recycled counter, reset/freeze |
+| 4 | The HUD Control itself + buttons to drive set_health / add_score / pulse, and a sparkle spawner |
+| 5 | NPC rectangle with patrol waypoints, detection/attack ranges, click-to-move target, live state label |
+| 6 | The animated character (body + eyes) with moving / attack / auto-demo controls |
+| 7 | Particle burst with flash quad; Burst button + auto-repeat, particle/lifetime readout |
+
+The viewer is under `viewer/`:
+
+```
+viewer/menu.tscn          Main menu (round selector + model list)
+viewer/menu.gd
+viewer/stage.tscn         Stage shell (back button, world, error display)
+viewer/stage.gd
+viewer/viewer_state.gd    Autoload: round/mode config + staging (copies a model's
+                          .gd files into the live dir, stripping class_name)
+viewer/drivers/
+  base_driver.gd          Shared driver base (world + control panel layout)
+  round1.gd ... round7.gd Per-round visualization
+```
+
+Notes:
+- The viewer writes the selected model's files to the round's live dir
+  (`submission/`, `submission2/`, ...) exactly like `run_bench.py` does, so
+  submissions that reference each other by path (e.g. `pegboard.gd` loading
+  `res://submission3/bouncy_ball.gd`) resolve correctly.
+- `godot --path . -- --shot /tmp/x.png` (add `--shot <path>` to any round/model
+  launch) saves a screenshot and quits — handy for headless visual checks.
+- Headless smoke test for all 7 rounds:
+
+```bash
+godot --headless --path . -s tests/viewer_smoke.gd
+```
+
 ## Recording & Visual Comparison
 
 ### MP4 Recording
@@ -127,6 +178,7 @@ results/            Generated reports + recordings
 run_bench.py        Main benchmark harness
 record_round.py     Standalone recording harness
 capture_shots.py    Screenshot capture + HTML visual comparison
+viewer/             Interactive submission viewer (menu + stage + per-round drivers)
 ```
 
 ## Reference Implementations
