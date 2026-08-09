@@ -93,6 +93,19 @@ ACTIVE_MODELS = [(mid, label) for mid, label in ROUND2_MODELS
 ACTIVE_MODELS += [
     ("tencent/hy3", "Tencent Hy3"),
     ("xiaomi/mimo-v2.5-pro", "Xiaomi MiMo V2.5 Pro"),
+    ("openai/gpt-5.6-luna", "GPT-5.6 Luna"),
+    ("thinkingmachines/inkling", "Inkling"),
+    ("x-ai/grok-4.5", "Grok 4.5"),
+    ("aion-labs/aion-3.0-mini", "Aion 3.0 Mini"),
+    ("z-ai/glm-5.2", "GLM 5.2"),
+    ("moonshotai/kimi-k2.7-code", "Kimik2.7 Code"),
+    ("stepfun/step-3.7-flash", "Step 3.7 Flash"),
+    ("x-ai/grok-build-0.1", "Grok Build 0.1"),
+    ("inclusionai/ring-2.6-1t", "Ring 2.6 1T"),
+    ("ibm-granite/granite-4.1-8b", "Granite 4.1 8B"),
+    ("mistralai/mistral-medium-3-5", "Mistral Medium 3.5"),
+    ("xiaomi/mimo-v2.5", "Xiaomi MiMo V2.5"),
+    ("arcee-ai/trinity-large-thinking", "Trinity Large Thinking"),
 ]
 
 # Free tier (OpenRouter :free variants, $0). Trimmed 2026-08 to the two lagunas
