@@ -184,6 +184,19 @@
 </div>
 
 <div class="chart-container">
+  <div class="chart-row">
+    <div class="chart-half">
+      <div class="chart-title">Score distribution per round <span class="chart-sub">(box: min/Q1/median/Q3/max, whiskers)</span></div>
+      <div id="boxplot-chart" class="echarts"></div>
+    </div>
+    <div class="chart-half">
+      <div class="chart-title">Cost vs score efficiency <span class="chart-sub">(symlog cost; size = tokens-out; color = tier)</span></div>
+      <div id="costeff-chart" class="echarts"></div>
+    </div>
+  </div>
+</div>
+
+<div class="chart-container">
   <div class="chart-title">Detailed Results Table (click headers to sort)</div>
   <div class="table-container">
     <table id="results-table">
@@ -526,12 +539,14 @@ function renderTrajectory(data) {
   }
 }
 
-/* ---------- ECharts: heatmap + radar ---------- */
-let heatmapChart = null, radarChart = null;
+/* ---------- ECharts: heatmap + radar + boxplot + cost-efficiency ---------- */
+let heatmapChart = null, radarChart = null, boxplotChart = null, costeffChart = null;
 function renderECharts(data) {
   if (typeof echarts === "undefined") return;
   if (!heatmapChart) heatmapChart = echarts.init(document.getElementById("heatmap-chart"));
   if (!radarChart) radarChart = echarts.init(document.getElementById("radar-chart"));
+  if (!boxplotChart) boxplotChart = echarts.init(document.getElementById("boxplot-chart"));
+  if (!costeffChart) costeffChart = echarts.init(document.getElementById("costeff-chart"));
 
   // ---- Heatmap: model (rows) × round (cols), fill = score ----
   const rounds = [...new Set(data.map(d => d.round))].sort((a, b) => a - b);
@@ -618,8 +633,76 @@ function renderECharts(data) {
       })
     }]
   });
+// ---- Box plot: score distribution per round ----
+  const perRoundScores = rounds.map(r => {
+    const sd = data.filter(d => d.round === r).map(d => d.score).sort((a, b) => a - b);
+    return { round: r, scores: sd };
+  });
+  function quartile(arr, q) {
+    if (!arr.length) return 0;
+    const pos = (arr.length - 1) * q, base = Math.floor(pos), rest = pos - base;
+    return arr[base + 1] !== undefined ? arr[base] + rest * (arr[base + 1] - arr[base]) : arr[base];
+  }
+  const boxData = perRoundScores.map(({ round, scores }) => {
+    if (!scores.length) return null;
+    return {
+      value: [quartile(scores, 0), quartile(scores, 0.25), quartile(scores, 0.5), quartile(scores, 0.75), quartile(scores, 1)]
+    };
+  });
+  boxplotChart.setOption({
+    backgroundColor: "transparent",
+    tooltip: { formatter: p => {
+      const r = rounds[p.dataIndex];
+      const sd = data.filter(d => d.round === r).map(d => d.score);
+      const v = p.value;
+      return `<b>Round ${r}: ${ROUND_NAMES[r]}</b><br>` +
+        `Min ${v[0].toFixed(0)} · Q1 ${v[1].toFixed(0)}<br>` +
+        `Median <b>${v[2].toFixed(1)}</b> · Q3 ${v[3].toFixed(0)}<br>` +
+        `Max ${v[4].toFixed(0)} · n=${sd.length}`;
+    } },
+    grid: { left: 44, right: 16, top: 12, bottom: 40 },
+    xAxis: { type: "category", data: rounds.map(r => "R" + r),
+      axisLabel: { color: "#888", fontSize: 11 }, axisLine: { lineStyle: { color: "#444" } } },
+    yAxis: { type: "value", min: 0, max: 100,
+      axisLabel: { color: "#888", fontSize: 11 }, splitLine: { lineStyle: { color: "#2a2f40" } } },
+    series: [{
+      type: "boxplot", data: boxData,
+      itemStyle: { borderColor: "#4a9eff", borderWidth: 1.5, color: "#1a2f4a" },
+      emphasis: { itemStyle: { borderColor: "#7cc0ff" } }
+    }]
+  });
+
+  // ---- Cost vs score efficiency scatter (log cost, size = tokens-out) ----
+  const costData = data.map(d => [d.cost, d.score, d.label, d.round, ROUND_NAMES[d.round], d.score, d.tier, d.out_tok || 0, d.wall]);
+  const minCost = d3.min(costData, d => d[0]) || 0.0001;
+  costeffChart.setOption({
+    backgroundColor: "transparent",
+    tooltip: { formatter: p => {
+      const d = p.data;
+      return `<b>${d[2]}</b> · R${d[3]} ${d[4]} · ${d[6]}<br>` +
+        `Score <b>${d[5].toFixed(1)}</b> · Cost ${fmtCost(d[1])}<br>` +
+        `Tokens out ${d[7]} · Wall ${d[8]}s`;
+    } },
+    grid: { left: 52, right: 44, top: 16, bottom: 44 },
+    xAxis: { type: "log", name: "Cost ($)", nameGap: 26, nameTextStyle: { color: "#888", fontSize: 10 },
+      min: Math.max(0.0001, minCost * 0.5),
+      axisLabel: { color: "#888", fontSize: 11, formatter: v => "$" + (v >= 0.01 ? v.toFixed(2) : v.toFixed(4)) },
+      splitLine: { lineStyle: { color: "#2a2f40" } } },
+    yAxis: { type: "value", name: "Score", nameTextStyle: { color: "#888", fontSize: 10 },
+      min: 0, max: 100, axisLabel: { color: "#888", fontSize: 11 }, splitLine: { lineStyle: { color: "#2a2f40" } } },
+    series: [{
+      type: "scatter", data: costData,
+      symbolSize: d => Math.min(26, 4 + Math.sqrt(d[7] || 0) / 6),
+      itemStyle: { color: p => TIER_COLORS[p.data[6]], opacity: 0.85 }
+    }]
+  });
 }
-window.addEventListener("resize", () => { if (heatmapChart) heatmapChart.resize(); if (radarChart) radarChart.resize(); });
+window.addEventListener("resize", () => {
+  if (heatmapChart) heatmapChart.resize();
+  if (radarChart) radarChart.resize();
+  if (boxplotChart) boxplotChart.resize();
+  if (costeffChart) costeffChart.resize();
+});
 
 /* ---------- Table ---------- */
 function colValue(m, col) {

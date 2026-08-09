@@ -97,7 +97,7 @@ function oversizedSVGText(svg, BODY_FONT_PX) {
 
 /** ECharts renders to <canvas>; verify each canvas fits its container and drew content. */
 async function auditECharts(page, vp) {
-  const canvases = await page.$$('#heatmap-chart canvas, #radar-chart canvas');
+  const canvases = await page.$$('#heatmap-chart canvas, #radar-chart canvas, #boxplot-chart canvas, #costeff-chart canvas');
   for (const cv of canvases) {
     const info = await cv.evaluate(c => {
       const rect = c.getBoundingClientRect();
