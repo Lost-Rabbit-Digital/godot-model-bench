@@ -19,6 +19,34 @@ python3 run_bench.py --round 4 --no-repair
 python3 run_bench.py --round 4 --only "poolside/laguna-s-2.1,google/gemini-3.6-flash"
 ```
 
+## Dashboard & UI audit
+
+The results dashboard (`results/dashboard.html`) is a D3 + ECharts single-page report.
+Rebuild its data and serve it locally:
+
+```bash
+./host_dashboard.sh            # rebuild data + serve + open browser
+./host_dashboard.sh --no-build # just serve existing results
+```
+
+Every dashboard change should pass the Playwright UI audit before commit. It renders
+the page at 1440×900 / 1024×768 / 1280×800 and programmatically checks for:
+
+- clipped / cut-off SVG text labels (model names, value labels)
+- overlapping SVG text elements
+- chart text larger than the body font
+- page-level horizontal overflow
+- ECharts canvases rendering (non-blank) and fitting their containers
+- console errors / JS exceptions
+
+```bash
+npx playwright install chromium   # once
+npm run audit                    # exit 0 = clean, 1 = visual findings, 2 = JS errors
+```
+
+Screenshots land in `tests/audit-output/shots/` and the report in
+`tests/audit-output/report.md` for vision-based review.
+
 ## Rounds
 
 | Round | Challenge             | Files                              | Checks | Runner          |

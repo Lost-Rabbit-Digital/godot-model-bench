@@ -32,6 +32,10 @@ debug_test2.gd
 *.tmp
 *.uid
 
+# Node / Playwright audit
+node_modules/
+tests/audit-output/
+
 # Python
 __pycache__/
 *.pyc

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Godot Model Bench — Results Dashboard</title>
 <script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"></script>
 <script src="all_results.js"></script>
 <style>
   :root {
@@ -77,6 +78,7 @@
   .mp4-badge { background: #333; color: #aaa; font-size: 10px; padding: 1px 4px; border-radius: 3px; }
   .mp4-badge.available { background: #2a5a2a; color: #51cf66; }
   .empty-note { color: var(--muted); font-size: 12px; padding: 20px; text-align: center; }
+  .echarts { width: 100%; height: 420px; }
   @media (max-width: 768px) { .chart-half { min-width: 100%; } }
 </style>
 </head>
@@ -166,6 +168,19 @@
   <div class="chart-title">Model trajectory — score across rounds <span class="chart-sub">(click legend to toggle)</span></div>
   <div id="trajectory-legend" class="legend"></div>
   <div id="trajectory-chart"></div>
+</div>
+
+<div class="chart-container">
+  <div class="chart-row">
+    <div class="chart-half">
+      <div class="chart-title">Model × Round heatmap <span class="chart-sub">(score intensity; hover for details)</span></div>
+      <div id="heatmap-chart" class="echarts"></div>
+    </div>
+    <div class="chart-half">
+      <div class="chart-title">Per-model radar <span class="chart-sub">(score, cost-efficiency, speed, tokens-in, tokens-out)</span></div>
+      <div id="radar-chart" class="echarts"></div>
+    </div>
+  </div>
 </div>
 
 <div class="chart-container">
@@ -278,21 +293,40 @@ function renderScoreBar(data) {
   if (!data.length) { sel.append("div").attr("class","empty-note").text("No data for current filters"); return; }
   const mi = metricInfo(currentMetric);
   const sorted = [...data].sort((a,b) => (mi.value(b) - mi.value(a)) * (mi.lowerBetter ? -1 : 1));
+  // Unique y-key per entry: the same model appears in multiple rounds — and in both
+  // paid+free tiers in rounds 1–3 — so a bare label would collapse entries onto one row.
+  const baseKey = d => `${d.label} · R${d.round}`;
+  const tierCollision = new Set();
+  {
+    const seen = new Map();
+    for (const d of sorted) {
+      const k = baseKey(d);
+      if (seen.has(k)) { tierCollision.add(k); tierCollision.add(seen.get(k)); }
+      seen.set(k, k);
+    }
+  }
+  const key = d => {
+    const k = baseKey(d);
+    return tierCollision.has(k) ? `${k} · ${d.tier}` : k;
+  };
   const W = 560, barH = 18, gap = 3;
-  const H = Math.max(120, sorted.length * (barH + gap) + MARGIN.top + MARGIN.bottom);
+  // Left margin must fit the longest y-axis label ("Xiaomi MiMo V2.5 Pro · R5" ≈ 130px @10px mono).
+  const leftPad = Math.min(170, d3.max(sorted, d => key(d).length) * 6.4 + 16);
+  const margin = { top: 16, right: 26, bottom: 40, left: Math.max(70, leftPad) };
+  const H = Math.max(120, sorted.length * (barH + gap) + margin.top + margin.bottom);
   const svg = sel.append("svg");
-  const innerW = W - MARGIN.left - MARGIN.right;
+  const innerW = W - margin.left - margin.right;
   const x = d3.scaleLinear().domain([0, d3.max(sorted, d => mi.value(d)) || 1])
     .range([0, innerW]).nice();
-  const y = d3.scaleBand().domain(sorted.map(d => d.label)).range([0, sorted.length*(barH+gap)]).padding(0.12);
+  const y = d3.scaleBand().domain(sorted.map(key)).range([0, sorted.length*(barH+gap)]).padding(0.12);
   svg.attr("viewBox", `0 0 ${W} ${H}`).attr("width","100%");
-  const g = svg.append("g").attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
+  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
   g.append("g").attr("class","grid").call(d3.axisTop(x).ticks(6).tickSize(-(sorted.length*(barH+gap))).tickFormat(""));
-  g.append("g").attr("class","axis").call(d3.axisLeft(y).tickSize(0).tickPadding(4));
+  g.append("g").attr("class","axis").call(d3.axisLeft(y).tickSize(0).tickPadding(4).tickFormat(d => d));
   g.selectAll("rect")
     .data(sorted).join("rect")
     .attr("x", 0)
-    .attr("y", d => y(d.label))
+    .attr("y", d => y(key(d)))
     .attr("width", d => x(mi.value(d)))
     .attr("height", y.bandwidth())
     .attr("fill", d => ROUND_COLORS[d.round])
@@ -303,11 +337,15 @@ function renderScoreBar(data) {
       `Checks: ${d.passed}/${d.total} · 1-shot: ${d.shot?"✓":"—"} · Tier: ${d.tier}<br>` +
       `Cost: ${fmtCost(d.cost)} · Wall: ${d.wall}s`, event))
     .on("mouseleave", tooltipHide);
+  // Value labels: inside the bar when it nearly fills the chart (would clip at the
+  // right edge), otherwise just past the bar end.
   g.append("g").selectAll("text")
     .data(sorted).join("text")
-    .attr("x", d => x(mi.value(d)) + 4)
-    .attr("y", d => y(d.label) + y.bandwidth()/2 + 3)
+    .attr("x", d => { const v = x(mi.value(d)); return v > innerW - 34 ? v - 4 : v + 4; })
+    .attr("y", d => y(key(d)) + y.bandwidth()/2 + 3)
     .attr("class","tick-label")
+    .style("text-anchor", d => x(mi.value(d)) > innerW - 34 ? "end" : "start")
+    .attr("fill", d => x(mi.value(d)) > innerW - 34 ? "#0f1117" : null)
     .text(d => fmtMetric(mi, mi.value(d)));
 }
 
@@ -322,14 +360,24 @@ function renderScatter(data) {
   const svg = sel.append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("width","100%");
   const innerW = W - MARGIN.left - MARGIN.right, innerH = H - MARGIN.top - MARGIN.bottom;
   const g = svg.append("g").attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
-  const x = d3.scaleLinear().domain([0, d3.max(data, d => xInfo.value(d)) * 1.05 || 1]).range([0, innerW]).nice();
+  const vals = data.map(d => xInfo.value(d));
+  const vmax = d3.max(vals) || 1;
+  // Cost/in-token values span several orders of magnitude (0.0003 → 0.05), so a
+  // linear scale crams every point into the left edge. Symlog spreads the low end.
+  const useLog = xKey === "cost" || xKey === "in_tok" || xKey === "out_tok";
+  const x = useLog
+    ? d3.scaleSymlog().domain([0, vmax * 1.1 || 1]).range([0, innerW]).nice()
+    : d3.scaleLinear().domain([0, vmax * 1.05 || 1]).range([0, innerW]).nice();
   // score is always y
   const y = d3.scaleLinear().domain([0, 100]).range([innerH, 0]);
   const r = d3.scaleSqrt().domain([0, d3.max(data, d => d.wall) || 1]).range([3, 14]);
+  const fmtTick = xKey === "cost"
+    ? v => (v >= 1 ? "$" + v.toFixed(0) : v >= 0.01 ? "$" + v.toFixed(2) : "$" + v.toFixed(4))
+    : v => (v >= 1000 ? (v/1000).toFixed(0) + "k" : String(Math.round(v)));
   g.append("g").attr("class","grid").call(d3.axisBottom(x).ticks(6).tickSize(-innerH).tickFormat(""));
   g.append("g").attr("class","grid").call(d3.axisLeft(y).ticks(6).tickSize(-innerW).tickFormat(""));
   g.append("g").attr("class","axis").call(d3.axisLeft(y).ticks(6));
-  g.append("g").attr("class","axis").call(d3.axisBottom(x).ticks(6));
+  g.append("g").attr("class","axis").call(d3.axisBottom(x).ticks(6).tickFormat(fmtTick));
   // dashed reference at score 80
   g.append("line").attr("x1",0).attr("x2",innerW).attr("y1",y(80)).attr("y2",y(80))
     .attr("stroke","#555").attr("stroke-dasharray","4 4").attr("stroke-width",1);
@@ -349,7 +397,7 @@ function renderScatter(data) {
       `Checks: ${d.passed}/${d.total} · 1-shot: ${d.shot?"✓":"—"}`, event))
     .on("mouseleave", tooltipHide);
   g.append("text").attr("x", innerW/2).attr("y", innerH + 30).attr("class","hline-label")
-    .style("text-anchor","middle").text(xKey === "cost" ? "Cost per run ($)" : xKey + (xInfo.unit ? " (" + xInfo.unit + ")" : ""));
+    .style("text-anchor","middle").text(xKey === "cost" ? "Cost per run ($, symlog)" : xKey + (xInfo.unit ? " (" + xInfo.unit + ")" : ""));
   g.append("text").attr("transform", "rotate(-90)").attr("x", -innerH/2).attr("y", -44)
     .attr("class","hline-label").style("text-anchor","middle").text("Score");
 }
@@ -381,9 +429,15 @@ function renderPerRound(data) {
       `Round ${d.round}: ${ROUND_NAMES[d.round]}<br>` +
       `${mi.unit==="$" ? "Avg cost" : "Avg"} <b>${fmtMetric(mi, d.avg)}</b> (n=${d.count})`, event))
     .on("mouseleave", tooltipHide);
+  const labelFor = d => fmtMetric(mi, d.avg) + ` (n=${d.count})`;
+  // Label inside the bar when it would clip at the right edge (width-aware).
   g.append("g").selectAll("text").data(rounds).join("text")
-    .attr("x", d => x(d.avg)+4).attr("y", d => y("R"+d.round)+y.bandwidth()/2+3)
-    .attr("class","tick-label").text(d => fmtMetric(mi, d.avg) + ` (n=${d.count})`);
+    .attr("x", d => { const v = x(d.avg); return v > innerW - labelFor(d).length * 6.4 - 8 ? v - 4 : v + 4; })
+    .attr("y", d => y("R"+d.round)+y.bandwidth()/2+3)
+    .attr("class","tick-label")
+    .style("text-anchor", d => x(d.avg) > innerW - labelFor(d).length * 6.4 - 8 ? "end" : "start")
+    .attr("fill", d => x(d.avg) > innerW - labelFor(d).length * 6.4 - 8 ? "#0f1117" : null)
+    .text(labelFor);
 }
 
 /* ---------- Per-model average score ---------- */
@@ -397,12 +451,15 @@ function renderModelAvg(data) {
     rounds: entries.map(d => d.round)
   })).sort((a,b) => b.avg - a.avg);
   const W = 560, barH = 18, gap = 3;
-  const H = Math.max(120, rows.length * (barH+gap) + MARGIN.top + MARGIN.bottom);
+  // Fit the longest model name on the left axis.
+  const leftPad = Math.min(170, d3.max(rows, d => d.label.length) * 6.4 + 16);
+  const margin = { top: 16, right: 26, bottom: 40, left: Math.max(70, leftPad) };
+  const H = Math.max(120, rows.length * (barH+gap) + margin.top + margin.bottom);
   const svg = sel.append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("width","100%");
-  const innerW = W - MARGIN.left - MARGIN.right;
+  const innerW = W - margin.left - margin.right;
   const x = d3.scaleLinear().domain([0, 100]).range([0, innerW]);
   const y = d3.scaleBand().domain(rows.map(d => d.label)).range([0, rows.length*(barH+gap)]).padding(0.12);
-  const g = svg.append("g").attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
+  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
   g.append("g").attr("class","grid").call(d3.axisTop(x).ticks(5).tickSize(-(rows.length*(barH+gap))).tickFormat(""));
   g.append("g").attr("class","axis").call(d3.axisLeft(y).tickSize(0).tickPadding(4));
   g.selectAll("rect").data(rows).join("rect")
@@ -413,8 +470,12 @@ function renderModelAvg(data) {
       `Rounds: R${d.rounds.join(", R")}`, event))
     .on("mouseleave", tooltipHide);
   g.append("g").selectAll("text").data(rows).join("text")
-    .attr("x", d => x(d.avg)+4).attr("y", d => y(d.label)+y.bandwidth()/2+3)
-    .attr("class","tick-label").text(d => d.avg.toFixed(1));
+    .attr("x", d => { const v = x(d.avg); return v > innerW - 34 ? v - 4 : v + 4; })
+    .attr("y", d => y(d.label)+y.bandwidth()/2+3)
+    .attr("class","tick-label")
+    .style("text-anchor", d => x(d.avg) > innerW - 34 ? "end" : "start")
+    .attr("fill", d => x(d.avg) > innerW - 34 ? "#0f1117" : null)
+    .text(d => d.avg.toFixed(1));
 }
 
 /* ---------- Trajectory: score across rounds per model ---------- */
@@ -432,7 +493,7 @@ function renderTrajectory(data) {
   const rounds = [...new Set(data.map(d => d.round))].sort((a,b)=>a-b);
   const x = d3.scalePoint().domain(rounds).range([0, innerW]).padding(0.3);
   const y = d3.scaleLinear().domain([0, 100]).range([innerH, 0]);
-  g.append("g").attr("class","grid").call(d3.axisBottom(x).tickSize(-innerH).tickFormat(d => "R"+d));
+  g.append("g").attr("class","grid").call(d3.axisBottom(x).tickSize(-innerH).tickFormat(""));
   g.append("g").attr("class","grid").call(d3.axisLeft(y).ticks(5).tickSize(-innerW).tickFormat(""));
   g.append("g").attr("class","axis").call(d3.axisLeft(y).ticks(5));
   g.append("g").attr("class","axis").call(d3.axisBottom(x).tickFormat(d => "R"+d));
@@ -464,6 +525,101 @@ function renderTrajectory(data) {
       .on("click", () => { hiddenModels.clear(); renderTrajectory(data); });
   }
 }
+
+/* ---------- ECharts: heatmap + radar ---------- */
+let heatmapChart = null, radarChart = null;
+function renderECharts(data) {
+  if (typeof echarts === "undefined") return;
+  if (!heatmapChart) heatmapChart = echarts.init(document.getElementById("heatmap-chart"));
+  if (!radarChart) radarChart = echarts.init(document.getElementById("radar-chart"));
+
+  // ---- Heatmap: model (rows) × round (cols), fill = score ----
+  const rounds = [...new Set(data.map(d => d.round))].sort((a, b) => a - b);
+  const byModel = d3.group(data, d => d.label);
+  const models = Array.from(byModel.keys()).sort((a, b) =>
+    d3.mean(byModel.get(b), d => d.score) - d3.mean(byModel.get(a), d => d.score));
+  const modelIdx = new Map(models.map((m, i) => [m, i]));
+  const heat = [];
+  for (const m of models) {
+    const seenRound = new Set();
+    for (const d of byModel.get(m)) {
+      if (!rounds.includes(d.round)) continue;
+      // If a model ran in both tiers for the same round (rounds 1-3), keep the best score.
+      if (seenRound.has(d.round)) {
+        const prev = heat.find(h => h[0] === modelIdx.get(m) && h[1] === rounds.indexOf(d.round));
+        if (prev && d.score > prev[2]) prev[2] = d.score;
+        continue;
+      }
+      seenRound.add(d.round);
+      heat.push([modelIdx.get(m), rounds.indexOf(d.round), d.score]);
+    }
+  }
+  heatmapChart.setOption({
+    backgroundColor: "transparent",
+    tooltip: { position: "top", formatter: p => {
+      const m = models[p.value[0]], r = rounds[p.value[1]];
+      const entry = byModel.get(m).find(d => d.round === r);
+      return entry ? `<b>${m}</b> · R${r} ${ROUND_NAMES[r]}<br>Score: <b>${entry.score.toFixed(1)}</b><br>Checks ${entry.passed}/${entry.total} · Cost ${fmtCost(entry.cost)} · Wall ${entry.wall}s` : `<b>${m}</b> · R${r}<br>No data`;
+    } },
+    grid: { left: 14, right: 14, top: 10, bottom: 64, containLabel: true },
+    xAxis: { type: "category", data: rounds.map(r => "R" + r), splitArea: { show: true },
+      axisLabel: { color: "#888", fontSize: 11 }, axisLine: { lineStyle: { color: "#444" } } },
+    yAxis: { type: "category", data: models, splitArea: { show: true },
+      axisLabel: { color: "#e0e0e0", fontSize: 11 }, axisLine: { lineStyle: { color: "#444" } } },
+    visualMap: { min: 0, max: 100, calculable: true, orient: "horizontal", left: "center", bottom: 4, height: 14,
+      itemHeight: 14,
+      inRange: { color: ["#7a1f1f", "#ff6b6b", "#ffd43b", "#51cf66", "#0ca678"] },
+      textStyle: { color: "#888", fontSize: 10 } },
+    series: [{ type: "heatmap", data: heat, label: { show: false }, emphasis: { itemStyle: { shadowBlur: 8, shadowColor: "rgba(0,0,0,.5)" } } }]
+  });
+
+  // ---- Radar: per-model multi-metric (score, cost-efficiency, speed, tok-in, tok-out) ----
+  const radarModels = models.slice(0, Math.min(8, models.length));
+  radarChart.setOption({
+    backgroundColor: "transparent",
+    tooltip: { formatter: p => {
+      const b = p.value; return `<b>${p.name}</b><br>Score ${b[0].toFixed(1)}<br>Cost-eff ${b[1].toFixed(3)}<br>Speed ${b[2].toFixed(2)}`;
+    } },
+    legend: { bottom: 0, textStyle: { color: "#888", fontSize: 10 }, itemWidth: 10, itemHeight: 8 },
+    radar: {
+      indicator: [
+        { name: "Score", max: 100 },
+        { name: "Cost-eff.", max: 1 },
+        { name: "Speed", max: 1 },
+        { name: "Tok-in-eff.", max: 1 },
+        { name: "Tok-out-eff.", max: 1 }
+      ],
+      radius: "62%", splitNumber: 4,
+      axisName: { color: "#aaa", fontSize: 10 },
+      splitLine: { lineStyle: { color: ["#2a2f40"] } },
+      splitArea: { areaStyle: { color: ["rgba(42,47,64,.15)", "rgba(42,47,64,.05)"] } },
+      axisLine: { lineStyle: { color: "#333" } }
+    },
+    series: [{
+      type: "radar",
+      data: radarModels.map(m => {
+        const es = byModel.get(m);
+        const avgScore = d3.mean(es, d => d.score);
+        const cost = d3.sum(es, d => d.cost);
+        const wall = d3.mean(es, d => d.wall);
+        const tokIn = d3.mean(es, d => d.in_tok || 0);
+        const tokOut = d3.mean(es, d => d.out_tok || 0);
+        return {
+          name: m,
+          value: [
+            avgScore,
+            cost > 0 ? Math.min(1, 0.01 / cost) : 1,
+            10 / (wall + 10),
+            Math.min(1, 2000 / (tokIn + 2000)),
+            Math.min(1, 20000 / (tokOut + 20000))
+          ],
+          lineStyle: { width: 2 }, areaStyle: { opacity: 0.12 }, symbolSize: 3
+        };
+      })
+    }]
+  });
+}
+window.addEventListener("resize", () => { if (heatmapChart) heatmapChart.resize(); if (radarChart) radarChart.resize(); });
 
 /* ---------- Table ---------- */
 function colValue(m, col) {
@@ -506,6 +662,7 @@ function updateDashboard() {
   renderPerRound(data);
   renderModelAvg(data);
   renderTrajectory(data);
+  renderECharts(data);
   renderTable(data);
 }
 

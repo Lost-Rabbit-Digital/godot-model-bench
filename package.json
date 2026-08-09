@@ -1,0 +1,26 @@
+{
+  "name": "godot-model-bench",
+  "version": "1.0.0",
+  "description": "Benchmarking LLMs on Godot 4.7 GDScript game-development tasks. Each \"round\" is a self-contained challenge that tests a specific game-dev competency.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "audit": "node tests/audit_dashboard.js",
+    "dashboard": "bash host_dashboard.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lost-Rabbit-Digital/godot-model-bench.git"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Lost-Rabbit-Digital/godot-model-bench/issues"
+  },
+  "homepage": "https://github.com/Lost-Rabbit-Digital/godot-model-bench#readme",
+  "dependencies": {
+    "playwright": "^1.62.1"
+  }
+}
