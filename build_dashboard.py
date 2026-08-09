@@ -5,7 +5,7 @@ import json, os
 BASE = os.path.dirname(os.path.abspath(__file__))
 RESULTS = os.path.join(BASE, "results")
 
-def parse_report(path):
+def parse_report(path, tier="paid", strip_free_suffix=False):
     if not os.path.exists(path):
         return []
     lines = open(path).read().splitlines()
@@ -30,6 +30,8 @@ def parse_report(path):
         if len(cells) != expected:
             continue
         label = cells[1].replace(" ⭐", "").strip()
+        if strip_free_suffix:
+            label = label.replace(" (free)", "").strip()
         score = float(cells[2].strip("*, "))
         passed, total = cells[5].split("/")
         wall = int(cells[11])
@@ -45,19 +47,21 @@ def parse_report(path):
             "label": label, "score": score, "passed": int(passed), "total": int(total),
             "comp": comp, "tests": tests, "shot": shot, "wall": wall,
             "lint_n": lint_n, "in_tok": in_tok, "out_tok": out_tok, "cost": cost,
-            "tier": "paid", "mp4": mp4 if mp4 else None
+            "tier": tier, "mp4": mp4 if mp4 else None
         })
     return models
 
 ALL_DATA = {"rounds": []}
 
-# Rounds 1-3: parse from reports (they have all models)
-for rnd, name, checks, report in [
-    (1, "Beehive Simulation", 45, "report.md"),
-    (2, "Greenhouse Automation", 34, "report_round2.md"),
-    (3, "Pegboard Physics", 16, "report_round3.md"),
+# Rounds 1-3: parse from paid + free reports (they have all models)
+for rnd, name, checks, report, free_report in [
+    (1, "Beehive Simulation", 45, "report.md", "report_round1_free.md"),
+    (2, "Greenhouse Automation", 34, "report_round2.md", "report_round2_free.md"),
+    (3, "Pegboard Physics", 16, "report_round3.md", "report_round3_free.md"),
 ]:
-    r = {"num": rnd, "name": name, "checks": checks, "models": parse_report(os.path.join(RESULTS, report))}
+    models = parse_report(os.path.join(RESULTS, report), "paid")
+    models += parse_report(os.path.join(RESULTS, free_report), "free", strip_free_suffix=True)
+    r = {"num": rnd, "name": name, "checks": checks, "models": models}
     ALL_DATA["rounds"].append(r)
 
 # Round 4: from report + manual data for Muse/Mimo

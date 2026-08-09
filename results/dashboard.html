@@ -34,14 +34,26 @@
   button.round-tab.active { border-color: var(--accent); }
   .chart-container { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 24px; }
   .chart-row { display: flex; gap: 20px; flex-wrap: wrap; }
-  .chart-half { flex: 1; min-width: 400px; }
+  .chart-half { flex: 1; min-width: 420px; }
   .chart-title { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
-  .bar-chart { display: flex; flex-direction: column; gap: 2px; }
-  .bar-row { display: flex; align-items: center; gap: 8px; }
-  .bar-label { width: 180px; font-size: 12px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .bar-track { flex: 1; background: var(--card2); border-radius: 3px; height: 18px; }
-  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
-  .bar-value { width: 60px; font-size: 12px; font-weight: 600; }
+  .chart-sub { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  svg { display: block; width: 100%; height: auto; }
+  .axis text { fill: var(--muted); font-size: 10px; font-family: inherit; }
+  .axis path, .axis line { stroke: #444; }
+  .grid line { stroke: #2a2f40; stroke-dasharray: 3 3; }
+  .grid path { stroke: none; }
+  .bar { fill: var(--accent); }
+  .bar:hover { opacity: 0.8; }
+  .dot { stroke: #0f1117; stroke-width: 1px; }
+  .dot:hover { stroke: #fff; }
+  .hline-label { font-size: 10px; fill: var(--muted); }
+  svg text.tick-label { fill: var(--text); font-size: 10px; font-family: inherit; }
+  .tooltip { position: absolute; background: #0b0d13; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 11px; line-height: 1.5; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 10; max-width: 260px; box-shadow: 0 4px 16px rgba(0,0,0,.5); }
+  .tooltip b { color: var(--gold); }
+  .tooltip .tt-label { color: var(--text); font-weight: 600; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
   .table-container { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; font-size: 12px; }
   th, td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--border); cursor: pointer; }
@@ -60,14 +72,17 @@
   .tag-r5 { background: #9356dc22; color: #9356dc; }
   .tag-r6 { background: #ff922b22; color: #ff922b; }
   .tag-r7 { background: #15d29922; color: #15d299; }
+  .tag-free { background: #51cf6622; color: #51cf66; }
+  .tag-paid { background: #4a9eff22; color: #4a9eff; }
   .mp4-badge { background: #333; color: #aaa; font-size: 10px; padding: 1px 4px; border-radius: 3px; }
   .mp4-badge.available { background: #2a5a2a; color: #51cf66; }
-  @media (max-width: 768px) { .chart-half { min-width: 100%; } .bar-label { width: 120px; } }
+  .empty-note { color: var(--muted); font-size: 12px; padding: 20px; text-align: center; }
+  @media (max-width: 768px) { .chart-half { min-width: 100%; } }
 </style>
 </head>
 <body>
 <h1>Godot Model Bench — Results Dashboard</h1>
-<div class="subtitle">Godot 4.7.1 | Score = Compile 10 + Correctness 0-50 + Single-shot 10 + Hygiene 10 + Time 0-10 + Lint 0-10 | Serve via: python3 -m http.server 8080 --directory results</div>
+<div class="subtitle">Godot 4.7.1 | Score = Compile 10 + Correctness 0-50 + Single-shot 10 + Hygiene 10 + Time 0-10 + Lint 0-10 | Hover any chart for details · Serve via ./host_dashboard.sh</div>
 
 <div class="summary-cards">
   <div class="summary-card"><div class="value" id="total-models">--</div><div class="label">Model-Round entries</div></div>
@@ -92,8 +107,8 @@
   <div class="control-group"><label>Metric:</label>
     <select id="metric-select">
       <option value="score">Score (0-100, higher=better)</option>
+      <option value="cost">Cost ($/run, lower=better)</option>
       <option value="wall">Wall time (s, lower=better)</option>
-      <option value="cost">Cost ($/1M tokens, lower=better)</option>
       <option value="pass_rate">Pass rate (%)</option>
       <option value="in_tok">Tokens in (lower=better)</option>
       <option value="out_tok">Tokens out (lower=better)</option>
@@ -106,6 +121,14 @@
       <option value="free">Free only</option>
     </select>
   </div>
+  <div class="control-group"><label>Scatter X:</label>
+    <select id="scatter-x">
+      <option value="cost">Cost ($)</option>
+      <option value="wall">Wall time (s)</option>
+      <option value="in_tok">Tokens in</option>
+      <option value="out_tok">Tokens out</option>
+    </select>
+  </div>
   <button id="refresh-btn">Refresh from JSON</button>
 </div>
 
@@ -116,14 +139,33 @@
   </div>
   <div class="chart-row">
     <div class="chart-half">
-      <div class="chart-title">Model scores / metric</div>
-      <div id="score-chart" class="bar-chart"></div>
+      <div class="chart-title">Model scores / metric <span class="chart-sub">(sorted bar)</span></div>
+      <div id="score-chart"></div>
     </div>
     <div class="chart-half">
-      <div class="chart-title">Per-round averages</div>
-      <div id="metric-chart" class="bar-chart"></div>
+      <div class="chart-title">Cost vs Score — value frontier <span class="chart-sub">(bigger dot = longer wall time; color = tier)</span></div>
+      <div id="scatter-chart"></div>
     </div>
   </div>
+</div>
+
+<div class="chart-container">
+  <div class="chart-row">
+    <div class="chart-half">
+      <div class="chart-title">Per-round averages <span class="chart-sub">(all rounds)</span></div>
+      <div id="metric-chart"></div>
+    </div>
+    <div class="chart-half">
+      <div class="chart-title">Per-model average score <span class="chart-sub">(across all rounds)</span></div>
+      <div id="model-avg-chart"></div>
+    </div>
+  </div>
+</div>
+
+<div class="chart-container">
+  <div class="chart-title">Model trajectory — score across rounds <span class="chart-sub">(click legend to toggle)</span></div>
+  <div id="trajectory-legend" class="legend"></div>
+  <div id="trajectory-chart"></div>
 </div>
 
 <div class="chart-container">
@@ -142,6 +184,7 @@
           <th data-col="7">Tokens Out</th>
           <th data-col="8">Cost ($)</th>
           <th>1-shot</th>
+          <th>Tier</th>
           <th>MP4</th>
         </tr>
       </thead>
@@ -150,16 +193,31 @@
   </div>
 </div>
 
+<div id="tooltip" class="tooltip"></div>
+
 <script>
 let ALL_DATA = window.ALL_RESULTS || null;
 let currentRound = "all";
 let currentMetric = "score";
 let currentTier = "all";
-let sortCol = -1;
+let currentScatterX = "cost";
+let sortCol = 0;
 let sortDir = 1;
+let hiddenModels = new Set(); // for trajectory toggle
 
 const ROUND_COLORS = { 1: "#4a9eff", 2: "#ffd43b", 3: "#51cf66", 4: "#ff6b6b", 5: "#9356dc", 6: "#ff922b", 7: "#15d299" };
 const ROUND_NAMES = { 1: "Beehive Sim", 2: "Greenhouse", 3: "Pegboard", 4: "HUD Juice", 5: "NPC FSM", 6: "Procedural Anim", 7: "Particles" };
+const TIER_COLORS = { paid: "#4a9eff", free: "#51cf66" };
+
+const MARGIN = { top: 16, right: 20, bottom: 40, left: 60 };
+const tt = d3.select("#tooltip");
+
+function tooltipShow(html, event) {
+  tt.html(html).style("opacity", 1)
+    .style("left", (event.pageX + 14) + "px")
+    .style("top", (event.pageY - 10) + "px");
+}
+function tooltipHide() { tt.style("opacity", 0); }
 
 function loadData() {
   if (ALL_DATA) return Promise.resolve();
@@ -179,120 +237,253 @@ function filterData() {
   return models;
 }
 
-function metricValue(m, metric) {
+// metric semantics: value + whether lower is better
+function metricInfo(metric) {
   switch(metric) {
-    case "score": return m.score;
-    case "wall": return -m.wall;
-    case "cost": return -m.cost;
-    case "pass_rate": return (m.passed / Math.max(m.total,1)) * 100;
-    case "in_tok": return -m.in_tok;
-    case "out_tok": return -m.out_tok;
-    default: return m.score;
+    case "wall": return { value: m => m.wall, lowerBetter: true, unit: "s", dec: 0 };
+    case "cost": return { value: m => m.cost, lowerBetter: true, unit: "$", dec: 4 };
+    case "pass_rate": return { value: m => (m.passed / Math.max(m.total,1)) * 100, lowerBetter: false, unit: "%", dec: 1 };
+    case "in_tok": return { value: m => m.in_tok || 0, lowerBetter: true, unit: "", dec: 0 };
+    case "out_tok": return { value: m => m.out_tok || 0, lowerBetter: true, unit: "", dec: 0 };
+    default: return { value: m => m.score, lowerBetter: false, unit: "", dec: 1 };
   }
 }
+function fmtMetric(mi, v) {
+  const d = mi.dec;
+  if (mi.unit === "$") return "$" + v.toFixed(d);
+  if (mi.unit === "s") return v.toFixed(d) + "s";
+  if (mi.unit === "%") return v.toFixed(d) + "%";
+  return v.toFixed(d);
+}
+function fmtCost(v) { return "$" + v.toFixed(4); }
 
-function metricFormat(metric, val) {
-  val = Math.abs(val);
-  if (metric === "cost") return "$" + val.toFixed(4);
-  return val.toFixed(metric === "score" || metric === "pass_rate" ? 1 : 0);
+function clearChart(sel) {
+  sel.selectAll("*").remove();
 }
 
-function colValue(m, col) {
-  const cols = [m.label, m.round, m.score, `${m.passed}/${m.total}`, m.wall, m.lint_n || 0, m.in_tok || 0, m.out_tok || 0, m.cost, m.shot, m.mp4];
-  return cols[col];
-}
-
-function updateDashboard() {
-  const data = filterData();
-  const uniqueModels = [...new Set(data.map(d => d.label))];
+function updateSummary(data) {
   const totalRounds = [...new Set(data.map(d => d.round))].length;
   const avgScore = data.length ? d3.mean(data, d => d.score) : 0;
   const totalCost = data.length ? d3.sum(data, d => d.cost) : 0;
-  
   d3.select("#total-models").text(data.length);
   d3.select("#total-rounds").text(totalRounds);
   d3.select("#avg-score").text(avgScore.toFixed(1));
   d3.select("#total-cost").text("$" + totalCost.toFixed(4));
+}
 
-  const invert = ["wall","cost","in_tok","out_tok"].includes(currentMetric);
-  const sorted = [...data].sort((a,b) => {
-    const va = metricValue(a, currentMetric), vb = metricValue(b, currentMetric);
-    return invert ? vb - va : va - vb;
-  });
-  const maxVal = d3.max(sorted, d => Math.abs(metricValue(d, currentMetric))) || 1;
+/* ---------- Bar chart: models sorted by current metric ---------- */
+function renderScoreBar(data) {
+  const sel = d3.select("#score-chart");
+  clearChart(sel);
+  if (!data.length) { sel.append("div").attr("class","empty-note").text("No data for current filters"); return; }
+  const mi = metricInfo(currentMetric);
+  const sorted = [...data].sort((a,b) => (mi.value(b) - mi.value(a)) * (mi.lowerBetter ? -1 : 1));
+  const W = 560, barH = 18, gap = 3;
+  const H = Math.max(120, sorted.length * (barH + gap) + MARGIN.top + MARGIN.bottom);
+  const svg = sel.append("svg");
+  const innerW = W - MARGIN.left - MARGIN.right;
+  const x = d3.scaleLinear().domain([0, d3.max(sorted, d => mi.value(d)) || 1])
+    .range([0, innerW]).nice();
+  const y = d3.scaleBand().domain(sorted.map(d => d.label)).range([0, sorted.length*(barH+gap)]).padding(0.12);
+  svg.attr("viewBox", `0 0 ${W} ${H}`).attr("width","100%");
+  const g = svg.append("g").attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
+  g.append("g").attr("class","grid").call(d3.axisTop(x).ticks(6).tickSize(-(sorted.length*(barH+gap))).tickFormat(""));
+  g.append("g").attr("class","axis").call(d3.axisLeft(y).tickSize(0).tickPadding(4));
+  g.selectAll("rect")
+    .data(sorted).join("rect")
+    .attr("x", 0)
+    .attr("y", d => y(d.label))
+    .attr("width", d => x(mi.value(d)))
+    .attr("height", y.bandwidth())
+    .attr("fill", d => ROUND_COLORS[d.round])
+    .attr("opacity", d => (currentTier==="all" && d.tier==="free") ? 0.85 : 0.95)
+    .on("mousemove", (event, d) => tooltipShow(
+      `<div class="tt-label">${d.label}</div>R${d.round} ${d.roundName}<br>` +
+      `<b>Score:</b> ${d.score.toFixed(1)}<br>` +
+      `Checks: ${d.passed}/${d.total} · 1-shot: ${d.shot?"✓":"—"} · Tier: ${d.tier}<br>` +
+      `Cost: ${fmtCost(d.cost)} · Wall: ${d.wall}s`, event))
+    .on("mouseleave", tooltipHide);
+  g.append("g").selectAll("text")
+    .data(sorted).join("text")
+    .attr("x", d => x(mi.value(d)) + 4)
+    .attr("y", d => y(d.label) + y.bandwidth()/2 + 3)
+    .attr("class","tick-label")
+    .text(d => fmtMetric(mi, mi.value(d)));
+}
 
-  // Bar chart
-  const sc = d3.select("#score-chart");
-  sc.selectAll(".bar-row").remove();
-  sc.selectAll(".bar-row")
-    .data(sorted)
-    .join("div").attr("class","bar-row")
-    .each(function(d) {
-      const displayVal = Math.abs(metricValue(d, currentMetric));
-      const entry = d3.select(this);
-      entry.append("div").attr("class","bar-label")
-        .style("color", ROUND_COLORS[d.round])
-        .text(d.label.substring(0, 22) + (d.tier=="free"?" (F)":""));
-      const track = entry.append("div").attr("class","bar-track");
-      track.append("div").attr("class","bar-fill")
-        .style("width", (displayVal/maxVal*100)+"%")
-        .style("background", ROUND_COLORS[d.round]);
-      entry.append("div").attr("class","bar-value")
-        .style("color", d.score >= 80 ? "#ffd43b" : d.score >= 50 ? "#ff922b" : "#ff6b6b")
-        .text(metricFormat(currentMetric, displayVal));
-    });
+/* ---------- Scatter: cost-x vs score ---------- */
+function renderScatter(data) {
+  const sel = d3.select("#scatter-chart");
+  clearChart(sel);
+  if (!data.length) { sel.append("div").attr("class","empty-note").text("No data for current filters"); return; }
+  const xKey = currentScatterX;
+  const xInfo = metricInfo(xKey);
+  const W = 560, H = 360;
+  const svg = sel.append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("width","100%");
+  const innerW = W - MARGIN.left - MARGIN.right, innerH = H - MARGIN.top - MARGIN.bottom;
+  const g = svg.append("g").attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
+  const x = d3.scaleLinear().domain([0, d3.max(data, d => xInfo.value(d)) * 1.05 || 1]).range([0, innerW]).nice();
+  // score is always y
+  const y = d3.scaleLinear().domain([0, 100]).range([innerH, 0]);
+  const r = d3.scaleSqrt().domain([0, d3.max(data, d => d.wall) || 1]).range([3, 14]);
+  g.append("g").attr("class","grid").call(d3.axisBottom(x).ticks(6).tickSize(-innerH).tickFormat(""));
+  g.append("g").attr("class","grid").call(d3.axisLeft(y).ticks(6).tickSize(-innerW).tickFormat(""));
+  g.append("g").attr("class","axis").call(d3.axisLeft(y).ticks(6));
+  g.append("g").attr("class","axis").call(d3.axisBottom(x).ticks(6));
+  // dashed reference at score 80
+  g.append("line").attr("x1",0).attr("x2",innerW).attr("y1",y(80)).attr("y2",y(80))
+    .attr("stroke","#555").attr("stroke-dasharray","4 4").attr("stroke-width",1);
+  g.append("text").attr("x",4).attr("y",y(80)-4).attr("class","hline-label").text("score 80");
+  g.selectAll("circle")
+    .data(data).join("circle")
+    .attr("cx", d => x(xInfo.value(d)))
+    .attr("cy", d => y(d.score))
+    .attr("r", d => r(d.wall))
+    .attr("fill", d => TIER_COLORS[d.tier])
+    .attr("class","dot")
+    .attr("opacity", 0.85)
+    .on("mousemove", (event, d) => tooltipShow(
+      `<div class="tt-label">${d.label}</div>R${d.round} ${d.roundName} · ${d.tier}<br>` +
+      `Score: <b>${d.score.toFixed(1)}</b><br>` +
+      `Cost: ${fmtCost(d.cost)} · Wall: ${d.wall}s<br>` +
+      `Checks: ${d.passed}/${d.total} · 1-shot: ${d.shot?"✓":"—"}`, event))
+    .on("mouseleave", tooltipHide);
+  g.append("text").attr("x", innerW/2).attr("y", innerH + 30).attr("class","hline-label")
+    .style("text-anchor","middle").text(xKey === "cost" ? "Cost per run ($)" : xKey + (xInfo.unit ? " (" + xInfo.unit + ")" : ""));
+  g.append("text").attr("transform", "rotate(-90)").attr("x", -innerH/2).attr("y", -44)
+    .attr("class","hline-label").style("text-anchor","middle").text("Score");
+}
 
-  // Per-round chart
+/* ---------- Per-round averages (all rounds) ---------- */
+function renderPerRound(data) {
+  const sel = d3.select("#metric-chart");
+  clearChart(sel);
+  if (!data.length) { sel.append("div").attr("class","empty-note").text("No data for current filters"); return; }
+  const mi = metricInfo(currentMetric);
   const perRound = d3.group(data, d => d.round);
-  const roundAvgs = Array.from(perRound, ([round, models]) => ({
-    round: +round,
-    avg: d3.mean(models, m => metricValue(m, currentMetric)),
-    count: models.length,
+  const rounds = Array.from(perRound, ([round, models]) => ({
+    round: +round, avg: d3.mean(models, m => mi.value(m)), count: models.length,
     color: ROUND_COLORS[+round]
   })).sort((a,b) => b.avg - a.avg);
-  const maxAbs = d3.max(roundAvgs, d => Math.abs(d.avg)) || 1;
+  const W = 560, barH = 28, gap = 6;
+  const H = rounds.length * (barH+gap) + MARGIN.top + MARGIN.bottom;
+  const svg = sel.append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("width","100%");
+  const innerW = W - MARGIN.left - MARGIN.right;
+  const x = d3.scaleLinear().domain([0, d3.max(rounds, d => Math.abs(d.avg)) || 1]).range([0, innerW]).nice();
+  const y = d3.scaleBand().domain(rounds.map(d => "R"+d.round)).range([0, rounds.length*(barH+gap)]).padding(0.15);
+  const g = svg.append("g").attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
+  g.append("g").attr("class","grid").call(d3.axisTop(x).ticks(6).tickSize(-(rounds.length*(barH+gap))).tickFormat(""));
+  g.append("g").attr("class","axis").call(d3.axisLeft(y).tickSize(0).tickPadding(4));
+  g.selectAll("rect").data(rounds).join("rect")
+    .attr("x", 0).attr("y", d => y("R"+d.round)).attr("width", d => x(d.avg))
+    .attr("height", y.bandwidth()).attr("fill", d => d.color)
+    .on("mousemove", (event, d) => tooltipShow(
+      `Round ${d.round}: ${ROUND_NAMES[d.round]}<br>` +
+      `${mi.unit==="$" ? "Avg cost" : "Avg"} <b>${fmtMetric(mi, d.avg)}</b> (n=${d.count})`, event))
+    .on("mouseleave", tooltipHide);
+  g.append("g").selectAll("text").data(rounds).join("text")
+    .attr("x", d => x(d.avg)+4).attr("y", d => y("R"+d.round)+y.bandwidth()/2+3)
+    .attr("class","tick-label").text(d => fmtMetric(mi, d.avg) + ` (n=${d.count})`);
+}
 
-  const mc = d3.select("#metric-chart");
-  mc.selectAll(".bar-row").remove();
-  mc.selectAll(".bar-row")
-    .data(roundAvgs)
-    .join("div").attr("class","bar-row")
-    .each(function(d) {
-      const val = Math.abs(d.avg);
-      const entry = d3.select(this);
-      entry.append("div").attr("class","bar-label")
-        .style("color", d.color).text(`R${d.round} ${ROUND_NAMES[d.round]}`);
-      const track = entry.append("div").attr("class","bar-track");
-      track.append("div").attr("class","bar-fill")
-        .style("width", (val/maxAbs*100)+"%")
-        .style("background", d.color);
-      entry.append("div").attr("class","bar-value")
-        .text(metricFormat(currentMetric, val) + ` (n=${d.count})`);
-    });
+/* ---------- Per-model average score ---------- */
+function renderModelAvg(data) {
+  const sel = d3.select("#model-avg-chart");
+  clearChart(sel);
+  if (!data.length) { sel.append("div").attr("class","empty-note").text("No data for current filters"); return; }
+  const byModel = d3.group(data, d => d.label);
+  const rows = Array.from(byModel, ([label, entries]) => ({
+    label, avg: d3.mean(entries, d => d.score), count: entries.length,
+    rounds: entries.map(d => d.round)
+  })).sort((a,b) => b.avg - a.avg);
+  const W = 560, barH = 18, gap = 3;
+  const H = Math.max(120, rows.length * (barH+gap) + MARGIN.top + MARGIN.bottom);
+  const svg = sel.append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("width","100%");
+  const innerW = W - MARGIN.left - MARGIN.right;
+  const x = d3.scaleLinear().domain([0, 100]).range([0, innerW]);
+  const y = d3.scaleBand().domain(rows.map(d => d.label)).range([0, rows.length*(barH+gap)]).padding(0.12);
+  const g = svg.append("g").attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
+  g.append("g").attr("class","grid").call(d3.axisTop(x).ticks(5).tickSize(-(rows.length*(barH+gap))).tickFormat(""));
+  g.append("g").attr("class","axis").call(d3.axisLeft(y).tickSize(0).tickPadding(4));
+  g.selectAll("rect").data(rows).join("rect")
+    .attr("x", 0).attr("y", d => y(d.label)).attr("width", d => x(d.avg))
+    .attr("height", y.bandwidth()).attr("fill", "#4a9eff").attr("opacity", 0.9)
+    .on("mousemove", (event, d) => tooltipShow(
+      `<div class="tt-label">${d.label}</div>Avg score <b>${d.avg.toFixed(1)}</b> across ${d.count} rounds<br>` +
+      `Rounds: R${d.rounds.join(", R")}`, event))
+    .on("mouseleave", tooltipHide);
+  g.append("g").selectAll("text").data(rows).join("text")
+    .attr("x", d => x(d.avg)+4).attr("y", d => y(d.label)+y.bandwidth()/2+3)
+    .attr("class","tick-label").text(d => d.avg.toFixed(1));
+}
 
-  // Table
-  const tsorted = [...data].sort((a,b) => {
-    if (sortCol < 0) return 0;
-    const va = colValue(a, sortCol), vb = colValue(b, sortCol);
-    if (typeof va === "string") {
-      const cmp = va.localeCompare(vb);
-      return sortDir * cmp;
-    }
-    if (typeof va === "number" || !isNaN(parseFloat(va))) {
-      return sortDir * (parseFloat(va) - parseFloat(vb));
-    }
-    return sortDir * va.localeCompare(vb);
+/* ---------- Trajectory: score across rounds per model ---------- */
+function renderTrajectory(data) {
+  const sel = d3.select("#trajectory-chart");
+  const legendSel = d3.select("#trajectory-legend");
+  clearChart(sel); legendSel.selectAll("*").remove();
+  if (!data.length) { sel.append("div").attr("class","empty-note").text("No data for current filters"); return; }
+  const byModel = d3.group(data, d => d.label);
+  const models = Array.from(byModel.keys()).filter(m => !hiddenModels.has(m));
+  const W = 1160, H = 340;
+  const svg = sel.append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("width","100%");
+  const innerW = W - MARGIN.left - MARGIN.right, innerH = H - MARGIN.top - MARGIN.bottom;
+  const g = svg.append("g").attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
+  const rounds = [...new Set(data.map(d => d.round))].sort((a,b)=>a-b);
+  const x = d3.scalePoint().domain(rounds).range([0, innerW]).padding(0.3);
+  const y = d3.scaleLinear().domain([0, 100]).range([innerH, 0]);
+  g.append("g").attr("class","grid").call(d3.axisBottom(x).tickSize(-innerH).tickFormat(d => "R"+d));
+  g.append("g").attr("class","grid").call(d3.axisLeft(y).ticks(5).tickSize(-innerW).tickFormat(""));
+  g.append("g").attr("class","axis").call(d3.axisLeft(y).ticks(5));
+  g.append("g").attr("class","axis").call(d3.axisBottom(x).tickFormat(d => "R"+d));
+  const palette = ["#4a9eff","#ffd43b","#51cf66","#ff6b6b","#9356dc","#ff922b","#15d299","#f06595","#0ca678","#66d9e8"];
+  const color = d3.scaleOrdinal(palette);
+  models.forEach((label, i) => {
+    const entries = byModel.get(label).sort((a,b) => a.round - b.round);
+    const line = d3.line().x(d => x(d.round)).y(d => y(d.score)).defined(d => d.score !== undefined);
+    g.append("path").datum(entries)
+      .attr("fill","none").attr("stroke", color(label)).attr("stroke-width", 2).attr("stroke-opacity",0.9)
+      .attr("d", line);
+    g.selectAll("circle.cj-"+i).data(entries).join("circle")
+      .attr("class","dot cj-"+i).attr("cx", d => x(d.round)).attr("cy", d => y(d.score))
+      .attr("r", 4).attr("fill", color(label))
+      .on("mousemove", (event, d) => tooltipShow(
+        `<div class="tt-label">${label}</div>R${d.round} ${d.roundName}<br>Score <b>${d.score.toFixed(1)}</b> · Checks ${d.passed}/${d.total}<br>Cost ${fmtCost(d.cost)} · Wall ${d.wall}s`, event))
+      .on("mouseleave", tooltipHide);
   });
+  // legend
+  models.forEach((label, i) => {
+    const item = legendSel.append("div").attr("class","legend-item")
+      .style("cursor","pointer")
+      .on("click", () => { hiddenModels.add(label); renderTrajectory(data); });
+    item.append("span").attr("class","legend-swatch").style("background", color(label));
+    item.append("span").text(label);
+  });
+  if (hiddenModels.size) {
+    legendSel.append("button").text("Show all").style("margin-left","8px")
+      .on("click", () => { hiddenModels.clear(); renderTrajectory(data); });
+  }
+}
 
+/* ---------- Table ---------- */
+function colValue(m, col) {
+  const cols = [m.label, m.round, m.score, `${m.passed}/${m.total}`, m.wall, m.lint_n || 0, m.in_tok || 0, m.out_tok || 0, m.cost, m.shot, m.tier, m.mp4];
+  return cols[col];
+}
+function renderTable(data) {
+  const tsorted = [...data].sort((a,b) => {
+    const va = colValue(a, sortCol), vb = colValue(b, sortCol);
+    const numa = parseFloat(va), numb = parseFloat(vb);
+    if (!isNaN(numa) && !isNaN(numb)) return sortDir * (numa - numb);
+    return sortDir * String(va).localeCompare(String(vb));
+  });
   const tbody = d3.select("#table-body");
   tbody.selectAll("tr").remove();
-  tbody.selectAll("tr")
-    .data(tsorted)
-    .join("tr")
+  tbody.selectAll("tr").data(tsorted).join("tr")
     .attr("style", d => `border-left: 3px solid ${ROUND_COLORS[d.round]};`)
     .each(function(d) {
       const tr = d3.select(this);
-      tr.append("td").text(d.label).attr("class","model-name");
+      tr.append("td").text(d.label);
       tr.append("td").html(`<span class="tag tag-r${d.round}">R${d.round}</span> ${ROUND_NAMES[d.round]}`);
       tr.append("td").text(d.score.toFixed(1));
       tr.append("td").text(`${d.passed}/${d.total}`);
@@ -302,8 +493,20 @@ function updateDashboard() {
       tr.append("td").text(d.out_tok || 0);
       tr.append("td").text("$" + (d.cost || 0).toFixed(4));
       tr.append("td").text(d.shot ? "✓" : "—");
+      tr.append("td").html(`<span class="tag ${d.tier==="free"?"tag-free":"tag-paid"}">${d.tier}</span>`);
       tr.append("td").html(d.mp4 ? `<span class="mp4-badge available">MP4</span>` : '<span class="mp4-badge">—</span>');
     });
+}
+
+function updateDashboard() {
+  const data = filterData();
+  updateSummary(data);
+  renderScoreBar(data);
+  renderScatter(data);
+  renderPerRound(data);
+  renderModelAvg(data);
+  renderTrajectory(data);
+  renderTable(data);
 }
 
 function sortTable(col) {
@@ -313,13 +516,14 @@ function sortTable(col) {
 
 function updateRoundTabs() {
   const c = d3.select("#round-tabs"); c.selectAll("*").remove();
-  c.append("button").attr("class","round-tab active").attr("data-round","all").text("All Rounds")
-    .on("click", ()=>{currentRound="all";updateRoundTabs();updateDashboard();});
+  c.append("button").attr("class", currentRound==="all" ? "round-tab active" : "round-tab")
+    .attr("data-round","all").text("All Rounds")
+    .on("click", ()=>{currentRound="all"; updateRoundTabs(); updateDashboard();});
   if (ALL_DATA) {
     ALL_DATA.rounds.forEach(r=>{
-      c.append("button").attr("class","round-tab").attr("data-round",r.num)
-        .text(`R${r.num}: ${ROUND_NAMES[r.num]}`)
-        .on("click",()=>{currentRound=String(r.num);updateRoundTabs();updateDashboard();});
+      c.append("button").attr("class", String(currentRound)===String(r.num) ? "round-tab active" : "round-tab")
+        .attr("data-round",r.num).text(`R${r.num}: ${ROUND_NAMES[r.num]}`)
+        .on("click",()=>{currentRound=String(r.num); updateRoundTabs(); updateDashboard();});
     });
   }
 }
@@ -330,16 +534,19 @@ d3.select("#results-table").select("thead").on("click", function(event) {
   if (th && th.dataset.col) sortTable(+th.dataset.col);
 });
 
-d3.select("#round-select").on("change", ()=>{currentRound=d3.select(this).property("value");updateDashboard();});
-d3.select("#metric-select").on("change", ()=>{currentMetric=d3.select(this).property("value");updateDashboard();});
-d3.select("#tier-select").on("change", ()=>{currentTier=d3.select(this).property("value");updateDashboard();});
+// Use event.target — NOT this (arrow functions have no own `this`)
+d3.select("#round-select").on("change", (event)=>{ currentRound = event.target.value; updateRoundTabs(); updateDashboard(); });
+d3.select("#metric-select").on("change", (event)=>{ currentMetric = event.target.value; updateDashboard(); });
+d3.select("#tier-select").on("change", (event)=>{ currentTier = event.target.value; updateDashboard(); });
+d3.select("#scatter-x").on("change", (event)=>{ currentScatterX = event.target.value; updateDashboard(); });
 
 d3.select("#refresh-btn").on("click", ()=>{
-  d3.json("all_results.json").then(data=>{ALL_DATA=data;updateRoundTabs();updateDashboard();}).catch(()=>alert("Could not load JSON"));
+  d3.json("all_results.json").then(data=>{ALL_DATA=data; updateRoundTabs(); updateDashboard();})
+    .catch(()=>alert("Could not load JSON"));
 });
 
 // Init
-loadData().then(()=>{updateRoundTabs();updateDashboard();});
+loadData().then(()=>{ updateRoundTabs(); updateDashboard(); });
 </script>
 </body>
 </html>

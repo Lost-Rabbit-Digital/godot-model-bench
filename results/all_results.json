@@ -244,6 +244,38 @@
           "cost": 0.0167,
           "tier": "paid",
           "mp4": null
+        },
+        {
+          "label": "Laguna S 2.1",
+          "score": 99.0,
+          "passed": 45,
+          "total": 45,
+          "comp": 10,
+          "tests": 50,
+          "shot": 10,
+          "wall": 19,
+          "lint_n": 1,
+          "in_tok": 1304,
+          "out_tok": 954,
+          "cost": 0.0,
+          "tier": "free",
+          "mp4": null
+        },
+        {
+          "label": "Laguna XS 2.1",
+          "score": 83.0,
+          "passed": 45,
+          "total": 45,
+          "comp": 10,
+          "tests": 50,
+          "shot": 10,
+          "wall": 53,
+          "lint_n": 11,
+          "in_tok": 1304,
+          "out_tok": 8105,
+          "cost": 0.0,
+          "tier": "free",
+          "mp4": null
         }
       ]
     },
@@ -459,6 +491,38 @@
           "cost": 0.0019,
           "tier": "paid",
           "mp4": null
+        },
+        {
+          "label": "Laguna XS 2.1",
+          "score": 99.0,
+          "passed": 34,
+          "total": 34,
+          "comp": 10,
+          "tests": 50,
+          "shot": 10,
+          "wall": 11,
+          "lint_n": 1,
+          "in_tok": 991,
+          "out_tok": 542,
+          "cost": 0.0,
+          "tier": "free",
+          "mp4": null
+        },
+        {
+          "label": "Laguna S 2.1",
+          "score": 90.0,
+          "passed": 34,
+          "total": 34,
+          "comp": 10,
+          "tests": 50,
+          "shot": 10,
+          "wall": 19,
+          "lint_n": 0,
+          "in_tok": 991,
+          "out_tok": 527,
+          "cost": 0.0,
+          "tier": "free",
+          "mp4": null
         }
       ]
     },
@@ -641,6 +705,38 @@
           "out_tok": 760,
           "cost": 0.0002,
           "tier": "paid",
+          "mp4": null
+        },
+        {
+          "label": "Laguna S 2.1",
+          "score": 81.0,
+          "passed": 13,
+          "total": 16,
+          "comp": 10,
+          "tests": 41,
+          "shot": 0,
+          "wall": 50,
+          "lint_n": 0,
+          "in_tok": 1249,
+          "out_tok": 775,
+          "cost": 0.0,
+          "tier": "free",
+          "mp4": null
+        },
+        {
+          "label": "Laguna XS 2.1",
+          "score": 77.0,
+          "passed": 16,
+          "total": 16,
+          "comp": 10,
+          "tests": 50,
+          "shot": 0,
+          "wall": 63,
+          "lint_n": 4,
+          "in_tok": 1516,
+          "out_tok": 1866,
+          "cost": 0.0,
+          "tier": "free",
           "mp4": null
         }
       ]
