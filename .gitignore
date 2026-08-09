@@ -1,0 +1,37 @@
+# Godot
+.import/
+.godot/
+export.cfg
+export_presets.cfg
+
+# Submission live dirs (model output copied here at eval time — generated)
+submission/
+submission2/
+submission3/
+submission4/
+submission5/
+submission6/
+submission7/
+
+# Cached model submissions (regenerable, contains API response data)
+# Use git add --force to add reference/ dirs when needed
+submissions/*/
+submissions_round2/*/
+submissions_round3/*/
+submissions_round4/*/
+submissions_round5/*/
+submissions_round6/*/
+submissions_round7/*/
+
+# MP4 recordings (large binary files)
+results/recordings/
+
+# Debug/test scripts
+debug_test.gd
+debug_test2.gd
+*.tmp
+*.uid
+
+# Python
+__pycache__/
+*.pyc

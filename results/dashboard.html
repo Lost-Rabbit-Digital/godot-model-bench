@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Godot Model Bench — Results Dashboard</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="all_results.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d29;
+    --card2: #222639;
+    --text: #e0e0e0;
+    --muted: #888;
+    --accent: #4a9eff;
+    --gold: #ffd43b;
+    --green: #51cf66;
+    --red: #ff6b6b;
+    --border: #333;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'SF Mono','Monaco','Fira Code',monospace; background: var(--bg); color: var(--text); padding: 20px; }
+  h1 { font-size: 24px; margin: 0 0 4px 0; }
+  .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+  .controls { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+  .control-group { display: flex; gap: 6px; align-items: center; }
+  .control-group label { font-size: 12px; color: var(--muted); }
+  select, button { background: var(--card2); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 4px; font-family: inherit; font-size: 13px; cursor: pointer; }
+  select:focus, button:focus { outline: 2px solid var(--accent); }
+  button { background: var(--accent); color: #0f1117; font-weight: 600; }
+  button:hover { opacity: 0.9; }
+  button.round-tab { background: var(--card2); color: var(--text); border: 1px solid var(--border); font-size: 11px; padding: 4px 10px; margin-right: 4px; }
+  button.round-tab.active { border-color: var(--accent); }
+  .chart-container { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 24px; }
+  .chart-row { display: flex; gap: 20px; flex-wrap: wrap; }
+  .chart-half { flex: 1; min-width: 400px; }
+  .chart-title { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .bar-chart { display: flex; flex-direction: column; gap: 2px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; }
+  .bar-label { width: 180px; font-size: 12px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { flex: 1; background: var(--card2); border-radius: 3px; height: 18px; }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+  .bar-value { width: 60px; font-size: 12px; font-weight: 600; }
+  .table-container { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  th, td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--border); cursor: pointer; }
+  th { background: var(--card2); color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }
+  th:hover { background: #2a2f4a; }
+  td:first-child, th:first-child { text-align: left; cursor: default; }
+  .summary-cards { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  .summary-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; flex: 1; min-width: 180px; }
+  .summary-card .value { font-size: 28px; font-weight: 700; color: var(--accent); }
+  .summary-card .label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .tag { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 3px; margin-left: 4px; }
+  .tag-r1 { background: #4a9eff22; color: #4a9eff; }
+  .tag-r2 { background: #ffd43b22; color: #ffd43b; }
+  .tag-r3 { background: #51cf6622; color: #51cf66; }
+  .tag-r4 { background: #ff6b6b22; color: #ff6b6b; }
+  .tag-r5 { background: #9356dc22; color: #9356dc; }
+  .tag-r6 { background: #ff922b22; color: #ff922b; }
+  .tag-r7 { background: #15d29922; color: #15d299; }
+  .mp4-badge { background: #333; color: #aaa; font-size: 10px; padding: 1px 4px; border-radius: 3px; }
+  .mp4-badge.available { background: #2a5a2a; color: #51cf66; }
+  @media (max-width: 768px) { .chart-half { min-width: 100%; } .bar-label { width: 120px; } }
+</style>
+</head>
+<body>
+<h1>Godot Model Bench — Results Dashboard</h1>
+<div class="subtitle">Godot 4.7.1 | Score = Compile 10 + Correctness 0-50 + Single-shot 10 + Hygiene 10 + Time 0-10 + Lint 0-10 | Serve via: python3 -m http.server 8080 --directory results</div>
+
+<div class="summary-cards">
+  <div class="summary-card"><div class="value" id="total-models">--</div><div class="label">Model-Round entries</div></div>
+  <div class="summary-card"><div class="value" id="total-rounds">--</div><div class="label">Rounds with data</div></div>
+  <div class="summary-card"><div class="value" id="avg-score">--</div><div class="label">Average score</div></div>
+  <div class="summary-card"><div class="value" id="total-cost">--</div><div class="label">Total API cost ($)</div></div>
+</div>
+
+<div class="controls">
+  <div class="control-group"><label>Round:</label>
+    <select id="round-select">
+      <option value="all">All Rounds</option>
+      <option value="1">Round 1: Beehive Simulation</option>
+      <option value="2">Round 2: Greenhouse Automation</option>
+      <option value="3">Round 3: Pegboard Physics</option>
+      <option value="4">Round 4: HUD/UI Juice</option>
+      <option value="5">Round 5: NPC State Machine</option>
+      <option value="6">Round 6: Procedural Animation</option>
+      <option value="7">Round 7: Particles/VFX</option>
+    </select>
+  </div>
+  <div class="control-group"><label>Metric:</label>
+    <select id="metric-select">
+      <option value="score">Score (0-100, higher=better)</option>
+      <option value="wall">Wall time (s, lower=better)</option>
+      <option value="cost">Cost ($/1M tokens, lower=better)</option>
+      <option value="pass_rate">Pass rate (%)</option>
+      <option value="in_tok">Tokens in (lower=better)</option>
+      <option value="out_tok">Tokens out (lower=better)</option>
+    </select>
+  </div>
+  <div class="control-group"><label>Tier:</label>
+    <select id="tier-select">
+      <option value="all">All tiers</option>
+      <option value="paid">Paid only</option>
+      <option value="free">Free only</option>
+    </select>
+  </div>
+  <button id="refresh-btn">Refresh from JSON</button>
+</div>
+
+<div class="chart-container">
+  <div class="chart-title">Round tabs — click to filter</div>
+  <div id="round-tabs" style="margin-bottom:12px;">
+    <button class="round-tab active" data-round="all">All Rounds</button>
+  </div>
+  <div class="chart-row">
+    <div class="chart-half">
+      <div class="chart-title">Model scores / metric</div>
+      <div id="score-chart" class="bar-chart"></div>
+    </div>
+    <div class="chart-half">
+      <div class="chart-title">Per-round averages</div>
+      <div id="metric-chart" class="bar-chart"></div>
+    </div>
+  </div>
+</div>
+
+<div class="chart-container">
+  <div class="chart-title">Detailed Results Table (click headers to sort)</div>
+  <div class="table-container">
+    <table id="results-table">
+      <thead>
+        <tr>
+          <th data-col="0">Model</th>
+          <th data-col="1">Round</th>
+          <th data-col="2">Score</th>
+          <th data-col="3">Checks</th>
+          <th data-col="4">Wall (s)</th>
+          <th data-col="5">Lint #</th>
+          <th data-col="6">Tokens In</th>
+          <th data-col="7">Tokens Out</th>
+          <th data-col="8">Cost ($)</th>
+          <th>1-shot</th>
+          <th>MP4</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+let ALL_DATA = window.ALL_RESULTS || null;
+let currentRound = "all";
+let currentMetric = "score";
+let currentTier = "all";
+let sortCol = -1;
+let sortDir = 1;
+
+const ROUND_COLORS = { 1: "#4a9eff", 2: "#ffd43b", 3: "#51cf66", 4: "#ff6b6b", 5: "#9356dc", 6: "#ff922b", 7: "#15d299" };
+const ROUND_NAMES = { 1: "Beehive Sim", 2: "Greenhouse", 3: "Pegboard", 4: "HUD Juice", 5: "NPC FSM", 6: "Procedural Anim", 7: "Particles" };
+
+function loadData() {
+  if (ALL_DATA) return Promise.resolve();
+  return d3.json("all_results.json").then(data => { ALL_DATA = data; });
+}
+
+function filterData() {
+  if (!ALL_DATA) return [];
+  let models = [];
+  for (const round of ALL_DATA.rounds) {
+    if (currentRound !== "all" && round.num != currentRound) continue;
+    for (const m of round.models) {
+      models.push({...m, round: round.num, roundName: round.name, checks: round.checks});
+    }
+  }
+  if (currentTier !== "all") models = models.filter(m => m.tier === currentTier);
+  return models;
+}
+
+function metricValue(m, metric) {
+  switch(metric) {
+    case "score": return m.score;
+    case "wall": return -m.wall;
+    case "cost": return -m.cost;
+    case "pass_rate": return (m.passed / Math.max(m.total,1)) * 100;
+    case "in_tok": return -m.in_tok;
+    case "out_tok": return -m.out_tok;
+    default: return m.score;
+  }
+}
+
+function metricFormat(metric, val) {
+  val = Math.abs(val);
+  if (metric === "cost") return "$" + val.toFixed(4);
+  return val.toFixed(metric === "score" || metric === "pass_rate" ? 1 : 0);
+}
+
+function colValue(m, col) {
+  const cols = [m.label, m.round, m.score, `${m.passed}/${m.total}`, m.wall, m.lint_n || 0, m.in_tok || 0, m.out_tok || 0, m.cost, m.shot, m.mp4];
+  return cols[col];
+}
+
+function updateDashboard() {
+  const data = filterData();
+  const uniqueModels = [...new Set(data.map(d => d.label))];
+  const totalRounds = [...new Set(data.map(d => d.round))].length;
+  const avgScore = data.length ? d3.mean(data, d => d.score) : 0;
+  const totalCost = data.length ? d3.sum(data, d => d.cost) : 0;
+  
+  d3.select("#total-models").text(data.length);
+  d3.select("#total-rounds").text(totalRounds);
+  d3.select("#avg-score").text(avgScore.toFixed(1));
+  d3.select("#total-cost").text("$" + totalCost.toFixed(4));
+
+  const invert = ["wall","cost","in_tok","out_tok"].includes(currentMetric);
+  const sorted = [...data].sort((a,b) => {
+    const va = metricValue(a, currentMetric), vb = metricValue(b, currentMetric);
+    return invert ? vb - va : va - vb;
+  });
+  const maxVal = d3.max(sorted, d => Math.abs(metricValue(d, currentMetric))) || 1;
+
+  // Bar chart
+  const sc = d3.select("#score-chart");
+  sc.selectAll(".bar-row").remove();
+  sc.selectAll(".bar-row")
+    .data(sorted)
+    .join("div").attr("class","bar-row")
+    .each(function(d) {
+      const displayVal = Math.abs(metricValue(d, currentMetric));
+      const entry = d3.select(this);
+      entry.append("div").attr("class","bar-label")
+        .style("color", ROUND_COLORS[d.round])
+        .text(d.label.substring(0, 22) + (d.tier=="free"?" (F)":""));
+      const track = entry.append("div").attr("class","bar-track");
+      track.append("div").attr("class","bar-fill")
+        .style("width", (displayVal/maxVal*100)+"%")
+        .style("background", ROUND_COLORS[d.round]);
+      entry.append("div").attr("class","bar-value")
+        .style("color", d.score >= 80 ? "#ffd43b" : d.score >= 50 ? "#ff922b" : "#ff6b6b")
+        .text(metricFormat(currentMetric, displayVal));
+    });
+
+  // Per-round chart
+  const perRound = d3.group(data, d => d.round);
+  const roundAvgs = Array.from(perRound, ([round, models]) => ({
+    round: +round,
+    avg: d3.mean(models, m => metricValue(m, currentMetric)),
+    count: models.length,
+    color: ROUND_COLORS[+round]
+  })).sort((a,b) => b.avg - a.avg);
+  const maxAbs = d3.max(roundAvgs, d => Math.abs(d.avg)) || 1;
+
+  const mc = d3.select("#metric-chart");
+  mc.selectAll(".bar-row").remove();
+  mc.selectAll(".bar-row")
+    .data(roundAvgs)
+    .join("div").attr("class","bar-row")
+    .each(function(d) {
+      const val = Math.abs(d.avg);
+      const entry = d3.select(this);
+      entry.append("div").attr("class","bar-label")
+        .style("color", d.color).text(`R${d.round} ${ROUND_NAMES[d.round]}`);
+      const track = entry.append("div").attr("class","bar-track");
+      track.append("div").attr("class","bar-fill")
+        .style("width", (val/maxAbs*100)+"%")
+        .style("background", d.color);
+      entry.append("div").attr("class","bar-value")
+        .text(metricFormat(currentMetric, val) + ` (n=${d.count})`);
+    });
+
+  // Table
+  const tsorted = [...data].sort((a,b) => {
+    if (sortCol < 0) return 0;
+    const va = colValue(a, sortCol), vb = colValue(b, sortCol);
+    if (typeof va === "string") {
+      const cmp = va.localeCompare(vb);
+      return sortDir * cmp;
+    }
+    if (typeof va === "number" || !isNaN(parseFloat(va))) {
+      return sortDir * (parseFloat(va) - parseFloat(vb));
+    }
+    return sortDir * va.localeCompare(vb);
+  });
+
+  const tbody = d3.select("#table-body");
+  tbody.selectAll("tr").remove();
+  tbody.selectAll("tr")
+    .data(tsorted)
+    .join("tr")
+    .attr("style", d => `border-left: 3px solid ${ROUND_COLORS[d.round]};`)
+    .each(function(d) {
+      const tr = d3.select(this);
+      tr.append("td").text(d.label).attr("class","model-name");
+      tr.append("td").html(`<span class="tag tag-r${d.round}">R${d.round}</span> ${ROUND_NAMES[d.round]}`);
+      tr.append("td").text(d.score.toFixed(1));
+      tr.append("td").text(`${d.passed}/${d.total}`);
+      tr.append("td").text(d.wall);
+      tr.append("td").text(d.lint_n || 0);
+      tr.append("td").text(d.in_tok || 0);
+      tr.append("td").text(d.out_tok || 0);
+      tr.append("td").text("$" + (d.cost || 0).toFixed(4));
+      tr.append("td").text(d.shot ? "✓" : "—");
+      tr.append("td").html(d.mp4 ? `<span class="mp4-badge available">MP4</span>` : '<span class="mp4-badge">—</span>');
+    });
+}
+
+function sortTable(col) {
+  if (sortCol === col) sortDir = -sortDir; else { sortCol = col; sortDir = 1; }
+  updateDashboard();
+}
+
+function updateRoundTabs() {
+  const c = d3.select("#round-tabs"); c.selectAll("*").remove();
+  c.append("button").attr("class","round-tab active").attr("data-round","all").text("All Rounds")
+    .on("click", ()=>{currentRound="all";updateRoundTabs();updateDashboard();});
+  if (ALL_DATA) {
+    ALL_DATA.rounds.forEach(r=>{
+      c.append("button").attr("class","round-tab").attr("data-round",r.num)
+        .text(`R${r.num}: ${ROUND_NAMES[r.num]}`)
+        .on("click",()=>{currentRound=String(r.num);updateRoundTabs();updateDashboard();});
+    });
+  }
+}
+
+// Event delegation for table header clicks
+d3.select("#results-table").select("thead").on("click", function(event) {
+  const th = event.target.closest("th");
+  if (th && th.dataset.col) sortTable(+th.dataset.col);
+});
+
+d3.select("#round-select").on("change", ()=>{currentRound=d3.select(this).property("value");updateDashboard();});
+d3.select("#metric-select").on("change", ()=>{currentMetric=d3.select(this).property("value");updateDashboard();});
+d3.select("#tier-select").on("change", ()=>{currentTier=d3.select(this).property("value");updateDashboard();});
+
+d3.select("#refresh-btn").on("click", ()=>{
+  d3.json("all_results.json").then(data=>{ALL_DATA=data;updateRoundTabs();updateDashboard();}).catch(()=>alert("Could not load JSON"));
+});
+
+// Init
+loadData().then(()=>{updateRoundTabs();updateDashboard();});
+</script>
+</body>
+</html>
