@@ -32,7 +32,10 @@ func _ready() -> void:
 	var err: String = await _driver.build(cfg, ViewerState.model_name)
 	if err != "":
 		_show_error(err)
-	_handle_shot()
+		if _has_shot_arg():
+			_quit_cleanly.call_deferred(1)
+		return
+	await _handle_shot()
 	_dump_debug()
 
 
@@ -52,19 +55,48 @@ func _dump_debug() -> void:
 ## Debug: godot --path . -- --round 3 --model X --shot /tmp/r3.png
 ## Saves a screenshot of the running stage then quits.
 func _handle_shot() -> void:
-	var args := OS.get_cmdline_user_args()
-	var shot := ""
-	for i in args.size():
-		if args[i] == "--shot" and i + 1 < args.size():
-			shot = args[i + 1]
+	var shot := _shot_path()
 	if shot == "":
 		return
 	# let animations/physics run a bit before freezing the frame
 	await get_tree().create_timer(2.0).timeout
-	var img := get_viewport().get_texture().get_image()
-	img.save_png(shot)
+	var viewport := get_viewport()
+	var texture := viewport.get_texture()
+	if texture == null:
+		print("SHOT_ERROR viewport texture unavailable; use xvfb-run without --headless for screenshots")
+		_quit_cleanly.call_deferred(2)
+		return
+	var img := texture.get_image()
+	if img == null:
+		print("SHOT_ERROR viewport image unavailable")
+		_quit_cleanly.call_deferred(2)
+		return
+	var save_err: Error = img.save_png(shot)
+	if save_err != OK:
+		print("SHOT_ERROR save_png failed: %s" % save_err)
+		_quit_cleanly.call_deferred(2)
+		return
 	print("SHOT_SAVED " + shot)
-	get_tree().quit()
+	_quit_cleanly.call_deferred(0)
+
+
+func _quit_cleanly(code: int) -> void:
+	if _driver != null:
+		_driver.queue_free()
+		_driver = null
+	get_tree().quit(code)
+
+
+func _shot_path() -> String:
+	var args := OS.get_cmdline_user_args()
+	for i in args.size():
+		if args[i] == "--shot" and i + 1 < args.size():
+			return args[i + 1]
+	return ""
+
+
+func _has_shot_arg() -> bool:
+	return _shot_path() != ""
 
 
 func _build_ui() -> void:

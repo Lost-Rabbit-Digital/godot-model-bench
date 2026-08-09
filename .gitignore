@@ -15,13 +15,27 @@ submission7/
 
 # Cached model submissions (regenerable, contains API response data)
 # Use git add --force to add reference/ dirs when needed
-submissions/*/
+submissions_round1/*/
+!submissions_round1/reference/
+!submissions_round1/reference/**
 submissions_round2/*/
+!submissions_round2/reference/
+!submissions_round2/reference/**
 submissions_round3/*/
+!submissions_round3/reference/
+!submissions_round3/reference/**
 submissions_round4/*/
+!submissions_round4/reference/
+!submissions_round4/reference/**
 submissions_round5/*/
+!submissions_round5/reference/
+!submissions_round5/reference/**
 submissions_round6/*/
+!submissions_round6/reference/
+!submissions_round6/reference/**
 submissions_round7/*/
+!submissions_round7/reference/
+!submissions_round7/reference/**
 
 # MP4 recordings (large binary files)
 results/recordings/

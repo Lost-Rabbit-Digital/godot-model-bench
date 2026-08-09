@@ -113,13 +113,33 @@ Notes:
   (`submission/`, `submission2/`, ...) exactly like `run_bench.py` does, so
   submissions that reference each other by path (e.g. `pegboard.gd` loading
   `res://submission3/bouncy_ball.gd`) resolve correctly.
-- `godot --path . -- --shot /tmp/x.png` (add `--shot <path>` to any round/model
-  launch) saves a screenshot and quits — handy for headless visual checks.
+- `xvfb-run -a godot --path . -- --round 3 --model reference --shot /tmp/x.png`
+  (add `--shot <path>` to any round/model launch) saves a screenshot and quits.
+  A dummy `--headless` renderer has no viewport texture, so screenshot capture
+  fails fast with a diagnostic instead of hanging.
 - Headless smoke test for all 7 rounds:
 
 ```bash
 godot --headless --path . -s tests/viewer_smoke.gd
 ```
+
+- Catalog smoke test for every complete cached model submission:
+
+```bash
+godot --headless --path . -s tests/viewer_catalog.gd
+```
+
+- Normalize/migrate cached submissions after importing old benchmark data:
+
+```bash
+python3 organize_submissions.py       # report only
+python3 organize_submissions.py --apply
+```
+
+There is exactly one cache root per round: `submissions_round1/` through
+`submissions_round7/`. Incomplete or response-only model directories remain
+visible in the menu but are disabled instead of accidentally launching stale
+code from a previous selection.
 
 ## Recording & Visual Comparison
 
@@ -167,7 +187,7 @@ submission4/        Live dir for round 4
 submission5/        Live dir for round 5
 submission6/        Live dir for round 6
 submission7/        Live dir for round 7
-submissions/        Cached model outputs + API responses (round 1)
+submissions_round1/ Cached model outputs + API responses (round 1)
 submissions_round2/ Cached outputs (round 2)
 ...
 submissions_roundN/ Cached outputs (round N)

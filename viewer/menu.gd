@@ -103,9 +103,16 @@ func _populate_rounds() -> void:
 	for cfg in ViewerState.ROUNDS:
 		var btn := Button.new()
 		btn.text = "Round %d  —  %s" % [cfg["num"], cfg["title"]]
-		btn.pressed.connect(func(): _select_round(cfg))
+		btn.pressed.connect(_select_round.bind(cfg))
 		_round_box.add_child(btn)
-	# Select round 1 on start
+	# Restore the last round the user was viewing (set by the stage scene),
+	# so that pressing "Back" from the stage returns to the same round.
+	var target := ViewerState.round_num
+	if target > 0:
+		for cfg in ViewerState.ROUNDS:
+			if int(cfg["num"]) == target:
+				_select_round(cfg)
+				return
 	if ViewerState.ROUNDS.size() > 0:
 		_select_round(ViewerState.ROUNDS[0])
 
@@ -115,35 +122,32 @@ func _select_round(cfg: Dictionary) -> void:
 	for b in _model_buttons:
 		b.queue_free()
 	_model_buttons.clear()
-	var dir := DirAccess.open(str(cfg["dir"]))
-	if dir == null:
+	var names: Array = ViewerState.list_models(cfg)
+	if names.is_empty() and not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(str(cfg["dir"]))):
 		_status.text = "No submissions dir for %s (run the benchmark first)." % cfg["dir"]
 		return
-	dir.list_dir_begin()
-	var names: Array = []
-	var f: String = dir.get_next()
-	while f != "":
-		if dir.current_is_dir() and not f.begins_with("."):
-			names.append(f)
-		f = dir.get_next()
-	dir.list_dir_end()
-	names.sort()
-	if names.has("reference"):
-		names.erase("reference")
-		names.push_front("reference")
 	for name in names:
 		var btn := Button.new()
+		var available: bool = ViewerState.submission_is_complete(cfg, name)
 		if name == "reference":
 			btn.text = "[reference]  (expected / human-written solution)"
-		else:
+		elif available:
 			btn.text = name
-		btn.pressed.connect(func(): _launch(name))
+		else:
+			btn.text = "%s  [unavailable: incomplete files]" % name
+			btn.disabled = true
+		if available:
+			btn.pressed.connect(_launch.bind(name))
 		_model_box.add_child(btn)
 		_model_buttons.append(btn)
 	if names.is_empty():
 		_status.text = "No model submissions found in %s." % cfg["dir"]
 	else:
-		_status.text = "%d submission(s) for Round %d." % [names.size(), cfg["num"]]
+		var available_count := 0
+		for name in names:
+			if ViewerState.submission_is_complete(cfg, name):
+				available_count += 1
+		_status.text = "%d/%d submission(s) reviewable for Round %d." % [available_count, names.size(), cfg["num"]]
 
 
 func _launch(model: String) -> void:

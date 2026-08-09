@@ -17,3 +17,7 @@ ViewerState="*res://viewer/viewer_state.gd"
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+
+[accessibility]
+
+accessibility/disabled=true

@@ -37,7 +37,7 @@ API_URL = "https://openrouter.ai/api/v1/chat/completions"
 # Per-round config (set in main(); defaults are round 1)
 ROUND = 1
 RUNNER_SCRIPT = "res://tests/runner.gd"
-SUBMISSIONS = os.path.join(BASE, "submissions")
+SUBMISSIONS = os.path.join(BASE, "submissions_round1")
 SUBMIT_LIVE = "submission"
 SUBMIT_FILES = ("beehive.gd", "honey_math.gd")
 PROMPT_PATH = os.path.join(BASE, "challenge", "PROMPT.md")
@@ -48,7 +48,7 @@ FREE_MODE = False
 # Per-round configuration: prompt, runner, submission dir, live dir, file names, max_tokens.
 # Each round maps (round_num) -> (prompt, runner_path, submissions_dir, submit_live, submit_files, max_tokens).
 ROUNDS = {
-    1: ("PROMPT.md", "res://tests/runner.gd", os.path.join(BASE, "submissions"), "submission", ("beehive.gd", "honey_math.gd"), 16384),
+    1: ("PROMPT.md", "res://tests/runner.gd", os.path.join(BASE, "submissions_round1"), "submission", ("beehive.gd", "honey_math.gd"), 16384),
     2: ("PROMPT2.md", "res://tests/runner2.gd", os.path.join(BASE, "submissions_round2"), "submission2", ("greenhouse.gd", "thermostat.gd"), 32768),
     3: ("PROMPT3.md", "res://tests/runner3.gd", os.path.join(BASE, "submissions_round3"), "submission3", ("pegboard.gd", "bouncy_ball.gd"), 32768),
     4: ("PROMPT4.md", "res://tests/runner4.gd", os.path.join(BASE, "submissions_round4"), "submission4", ("juice_hud.gd", "hud_sparkle.gd"), 65536),
@@ -172,17 +172,20 @@ def extract_files(text: str):
     # Fallback: try to split a single block
     if len(blocks) >= 1:
         raw = blocks[0]
-        # Split by class_name or extends RefCounted/Node2D/Node markers
-        split_markers = []
-        for marker in ("class_name ", "extends "):
-            for m in re.finditer(r"(?m)^(%s)" % marker, raw):
-                split_markers.append(m.start())
-        if len(split_markers) >= n_expected:
-            split_markers.sort()
+        # Split by script headers when a model returned several files in one block.
+        # A single response may contain several scripts in one fenced block.
+        # Prefer class_name headers when there are enough of them; otherwise use
+        # extends headers. Treating every class_name and extends line as a split
+        # point can produce files containing only a class declaration.
+        class_starts = [m.start() for m in re.finditer(r"(?m)^class_name\s+", raw)]
+        extends_starts = [m.start() for m in re.finditer(r"(?m)^extends\s+", raw)]
+        starts = class_starts if len(class_starts) >= n_expected else extends_starts
+        if len(starts) >= n_expected:
+            starts.sort()
             files = []
             for i in range(n_expected):
-                start = split_markers[i]
-                end = split_markers[i + 1] if i + 1 < len(split_markers) else len(raw)
+                start = starts[i]
+                end = starts[i + 1] if i + 1 < len(starts) else len(raw)
                 files.append(raw[start:end].strip())
             return files, True
     # Last resort: if only 1 expected, use whatever we got
@@ -309,6 +312,10 @@ def _strip_class_name(src: str) -> str:
 def write_submission(sources: list) -> None:
     sub_dir = os.path.join(BASE, SUBMIT_LIVE)
     os.makedirs(sub_dir, exist_ok=True)
+    expected = set(SUBMIT_FILES)
+    for name in os.listdir(sub_dir):
+        if name.endswith(".gd") and name not in expected:
+            os.unlink(os.path.join(sub_dir, name))
     for i, src in enumerate(sources):
         src = _strip_class_name(src)
         fname = SUBMIT_FILES[i] if i < len(SUBMIT_FILES) else "file%d.gd" % i
@@ -429,6 +436,10 @@ def save_attempt(model_dir: str, attempt: int, a: dict) -> None:
         meta["error"] = a["error"]
     with open(os.path.join(model_dir, "attempt%d_meta.json" % attempt), "w") as f:
         json.dump(meta, f, indent=1)
+    expected = set(SUBMIT_FILES)
+    for name in os.listdir(model_dir):
+        if name.endswith(".gd") and name not in expected:
+            os.unlink(os.path.join(model_dir, name))
     for i, src in enumerate(a["files"]):
         fname = SUBMIT_FILES[i] if i < len(SUBMIT_FILES) else "file%d.gd" % i
         with open(os.path.join(model_dir, fname), "w") as f:
