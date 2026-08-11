@@ -108,6 +108,8 @@ ACTIVE_MODELS += [
     ("arcee-ai/trinity-large-thinking", "Trinity Large Thinking"),
     ("meta/muse-glimmer-30b", "Muse Glimmer 30B"),
     ("upstage/solar-pro4", "Solar Pro 4"),
+    ("nvidia/nemotron-3.5-lightning:free", "Nemotron 3.5 Lightning (free)"),
+    ("sakana/sakana-namazu", "Sakana Namazu"),
 ]
 
 # Free tier (OpenRouter :free variants, $0). Trimmed 2026-08 to the two lagunas

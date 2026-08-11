@@ -22,6 +22,8 @@
 | 14 | Granite 4.1 8B | **0.0** | 0.0 | 0 | 1/2 | 0 | 0 | 0 | 0 | 2 | 672 | -1 | 1039 | 17769 | $0.0018 |
 | 15 | Muse Glimmer 30B | **10.0** | 0.0 | 0 | 0/1 | 0 | 0 | 0 | 10 | 2 | 178 | 0 | 959 | 7738 | $0.0119 |
 | 16 | Solar Pro 4 | **10.0** | 0.0 | 0 | 0/1 | 0 | 0 | 0 | 10 | 2 | 28 | 0 | 991 | 877 | $0.0001 |
+| 17 | Nemotron 3.5 Lightning (free) | **10.0** | 0.0 | 0 | 0/1 | 0 | 0 | 0 | 10 | 2 | 82 | 4 | 1000 | 19835 | $0.0000 |
+| 18 | Sakana Namazu | **0.0** | 0.0 | 0 | 1/2 | 0 | 0 | 0 | 0 | 2 | 1 | -1 | 0 | 0 | $0.0000 |
 
 ## Per-model failure summary (first attempt)
 
@@ -116,3 +118,8 @@
 
 **upstage/solar-pro4** (score 10.0)
   - battery never ran (0/1 gate) both attempts
+**nvidia/nemotron-3.5-lightning:free** (score 10.0)
+  - battery never ran (0/1 gate) both attempts
+
+**sakana/sakana-namazu** (score 0.0)
+  - API blocked: OpenRouter 404 guardrail/data-policy restriction

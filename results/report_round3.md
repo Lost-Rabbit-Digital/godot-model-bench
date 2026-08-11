@@ -20,6 +20,8 @@
 | 11 | Laguna S 2.1 | **77.4** | 6.4 | 10 | 13/16 | 10 | 41 | 0 | 10 | 2 | 47 | 0 | 1249 | 760 | $0.0002 |
 | 12 | Muse Glimmer 30B | **80.0** | 0.0 | 10 | 16/16 | 10 | 50 | 0 | 10 | 2 | 281 | 0 | 1426 | 12499 | $0.0189 |
 | 13 | Solar Pro 4 | **10.0** | 0.0 | 0 | 3/4 | 0 | 0 | 0 | 10 | 2 | 20 | 9 | 1272 | 768 | $0.0001 |
+| 14 | Nemotron 3.5 Lightning (free) | **99.0** | 10.0 | 9 | 16/16 | 10 | 50 | 10 | 10 | 1 | 28 | 2 | 1293 | 7803 | $0.0000 |
+| 15 | Sakana Namazu | **0.0** | 0.0 | 0 | 2/4 | 0 | 0 | 0 | 0 | 2 | 0 | -1 | 0 | 0 | $0.0000 |
 
 ## Per-model failure summary (first attempt)
 
@@ -64,3 +66,8 @@
 
 **upstage/solar-pro4** (score 10.0)
   - repair round: battery still incomplete (3/4 checks attempt 1, gate not met)
+**nvidia/nemotron-3.5-lightning:free** (score 99.0)
+  - clean pass (16/16 attempt 1)
+
+**sakana/sakana-namazu** (score 0.0)
+  - API blocked: OpenRouter 404 "No endpoints available matching your guardrail restrictions and data policy"

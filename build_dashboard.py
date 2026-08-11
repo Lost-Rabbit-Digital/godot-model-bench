@@ -104,6 +104,10 @@ r5_models = [
      "wall": 15, "lint_n": 0, "in_tok": 1013, "out_tok": 786, "cost": 0.0001, "tier": "paid"},
     {"label": "Muse Glimmer 30B", "score": 96.3, "passed": 18, "total": 18, "comp": 10, "tests": 50, "shot": 10,
      "wall": 164, "lint_n": 0, "in_tok": 961, "out_tok": 12825, "cost": 0.0196, "tier": "paid"},
+    {"label": "Nemotron 3.5 Lightning (free)", "score": 85.2, "passed": 17, "total": 18, "comp": 10, "tests": 47, "shot": 0,
+     "wall": 90, "lint_n": 0, "in_tok": 1019, "out_tok": 9410, "cost": 0.0, "tier": "paid"},
+    {"label": "Sakana Namazu", "score": 0.0, "passed": 1, "total": 2, "comp": 0, "tests": 0, "shot": 0,
+     "wall": 0, "lint_n": -1, "in_tok": 0, "out_tok": 0, "cost": 0.0, "tier": "paid"},
 ]
 ALL_DATA["rounds"].append({"num": 5, "name": "NPC State Machine", "checks": 18, "models": r5_models})
 
@@ -127,6 +131,10 @@ r6_models = [
      "wall": 22, "lint_n": 0, "in_tok": 871, "out_tok": 1191, "cost": 0.0002, "tier": "paid"},
     {"label": "Muse Glimmer 30B", "score": 91.2, "passed": 16, "total": 16, "comp": 10, "tests": 50, "shot": 10,
      "wall": 107, "lint_n": 5, "in_tok": 823, "out_tok": 8345, "cost": 0.0128, "tier": "paid"},
+    {"label": "Nemotron 3.5 Lightning (free)", "score": 77.0, "passed": 15, "total": 16, "comp": 10, "tests": 47, "shot": 0,
+     "wall": 201, "lint_n": 0, "in_tok": 869, "out_tok": 18097, "cost": 0.0, "tier": "paid"},
+    {"label": "Sakana Namazu", "score": 0.0, "passed": 0, "total": 0, "comp": 0, "tests": 0, "shot": 0,
+     "wall": 40, "lint_n": -1, "in_tok": 0, "out_tok": 0, "cost": 0.0, "tier": "paid"},
 ]
 ALL_DATA["rounds"].append({"num": 6, "name": "Procedural Animation", "checks": 16, "models": r6_models})
 
@@ -163,6 +171,10 @@ r7_models = [
      "wall": 178, "lint_n": 0, "in_tok": 959, "out_tok": 7738, "cost": 0.0119, "tier": "paid"},
     {"label": "Solar Pro 4", "score": 10.0, "passed": 0, "total": 1, "comp": 0, "tests": 0, "shot": 0,
      "wall": 28, "lint_n": 0, "in_tok": 991, "out_tok": 877, "cost": 0.0001, "tier": "paid"},
+    {"label": "Nemotron 3.5 Lightning (free)", "score": 10.0, "passed": 0, "total": 1, "comp": 0, "tests": 0, "shot": 0,
+     "wall": 82, "lint_n": 4, "in_tok": 1000, "out_tok": 19835, "cost": 0.0, "tier": "paid"},
+    {"label": "Sakana Namazu", "score": 0.0, "passed": 1, "total": 2, "comp": 0, "tests": 0, "shot": 0,
+     "wall": 1, "lint_n": -1, "in_tok": 0, "out_tok": 0, "cost": 0.0, "tier": "paid"},
 ]
 ALL_DATA["rounds"].append({"num": 7, "name": "Particles/VFX", "checks": 28, "models": r7_models})
 

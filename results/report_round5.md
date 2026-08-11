@@ -11,6 +11,8 @@
 | 3 | Tencent Hy3 | **87.0** | 0.0 | 7 | 18/18 | 10 | 50 | 10 | 10 | 1 | 422 | 4 | 979 | 18305 | $0.0098 |
 | 4 | Solar Pro 4 | **100.0** | 10.0 | 10 | 18/18 | 10 | 50 | 10 | 10 | 1 | 15 | 0 | 1013 | 786 | $0.0001 |
 | 5 | Muse Glimmer 30B | **96.3** | 6.3 | 10 | 18/18 | 10 | 50 | 10 | 10 | 1 | 164 | 0 | 961 | 12825 | $0.0196 |
+| 6 | Nemotron 3.5 Lightning (free) | **85.2** | 8.2 | 10 | 17/18 | 10 | 47 | 0 | 10 | 2 | 90 | 0 | 1019 | 9410 | $0.0000 |
+| 7 | Sakana Namazu | **0.0** | 0.0 | 0 | 1/2 | 0 | 0 | 0 | 0 | 2 | 0 | -1 | 0 | 0 | $0.0000 |
 
 ## Per-model failure summary (first attempt)
 
@@ -28,3 +30,8 @@
 
 **meta/muse-glimmer-30b** (score 96.3)
   - clean pass (18/18 attempt 1)
+**nvidia/nemotron-3.5-lightning:free** (score 85.2)
+  - 17/18 attempt 1 (1 check short)
+
+**sakana/sakana-namazu** (score 0.0)
+  - API blocked: OpenRouter 404 guardrail/data-policy restriction
