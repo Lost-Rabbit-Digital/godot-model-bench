@@ -31,7 +31,7 @@ func _run_async() -> void:
 		var driver: Node = driver_script.new()
 		root.add_child(driver)
 		await process_frame
-		var err: String = await driver.call("build", cfg, "reference")
+		var err: String = await driver.call("build", cfg, "reference", vs)
 		if err != "":
 			_failures.append("round %d build: %s" % [cfg["num"], err])
 		for i in 30:

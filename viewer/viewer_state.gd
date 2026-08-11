@@ -82,6 +82,105 @@ var round_num: int = 0
 var model_name: String = ""
 var last_error: String = ""
 
+## Display labels for well-known model slugs (used to look up the scored
+## metadata in results/all_results.json, which is keyed by label).
+const SLUG_TO_LABEL: Dictionary = {
+	"inclusionai/ling-3.0-flash": "Ling 3.0 Flash",
+	"meta/muse-spark-1.2": "Muse Spark 1.2",
+	"qwen/qwen3.8-max": "Qwen3.8 Max",
+	"deepseek/deepseek-v4-flash-0731": "DeepSeek V4 Flash",
+	"thinkingmachines/inkling-small": "Inkling Small",
+	"qwen/qwen3.7-flash": "Qwen3.7 Flash",
+	"poolside/laguna-s-2.1": "Laguna S 2.1",
+	"google/gemini-3.6-flash": "Gemini 3.6 Flash",
+	"google/gemini-3.5-flash-lite": "Gemini 3.5 Flash Lite",
+	"meituan/longcat-2.0": "LongCat 2.0",
+	"kwaipilot/kat-coder-air-v2.5": "Kat Coder Air v2.5",
+	"aion-labs/aion-3.0-mini": "Aion 3.0 Mini",
+	"nex-agi/nex-n2-pro": "Nex N2 Pro",
+	"z-ai/glm-5.2": "GLM 5.2",
+	"minimax/minimax-m3": "MiniMax M3",
+	"tencent/hy3": "Tencent Hy3",
+	"xiaomi/mimo-v2.5-pro": "Xiaomi MiMo V2.5 Pro",
+	"openai/gpt-5.6-luna": "GPT-5.6 Luna",
+	"thinkingmachines/inkling": "Inkling",
+	"x-ai/grok-4.5": "Grok 4.5",
+	"moonshotai/kimi-k2.7-code": "Kimik2.7 Code",
+	"stepfun/step-3.7-flash": "Step 3.7 Flash",
+	"x-ai/grok-build-0.1": "Grok Build 0.1",
+	"inclusionai/ring-2.6-1t": "Ring 2.6 1T",
+	"ibm-granite/granite-4.1-8b": "Granite 4.1 8B",
+	"mistralai/mistral-medium-3-5": "Mistral Medium 3.5",
+	"xiaomi/mimo-v2.5": "Xiaomi MiMo V2.5",
+	"arcee-ai/trinity-large-thinking": "Trinity Large Thinking",
+	"meta/muse-glimmer-30b": "Muse Glimmer 30B",
+	"upstage/solar-pro4": "Solar Pro 4",
+}
+
+## Return the display label for a model slug (falls back to the slug itself).
+## Accepts both the raw id (meta/muse-spark-1.2) and the dir slug form
+## (meta_muse-spark-1.2); dict keys are raw ids.
+func model_label(name: String) -> String:
+	if name == "reference":
+		return "reference (human-written)"
+	if SLUG_TO_LABEL.has(name):
+		return SLUG_TO_LABEL[name]
+	var key: String = model_slug(name)
+	for k in SLUG_TO_LABEL:
+		if model_slug(k) == key:
+			return SLUG_TO_LABEL[k]
+	return name
+
+
+## Deterministic accent color per model so every submission is visually
+## distinct at a glance. Golden-ratio hue spacing keeps neighbours apart.
+func model_accent(name: String) -> Color:
+	var h: float = float(model_slug(name).hash() % 1000) / 1000.0
+	h = fmod(h + 0.61803398875, 1.0)
+	return Color.from_hsv(h, 0.62, 0.92, 1.0)
+
+
+## Score color: green when the battery fully passed, amber for a partial
+## pass, red when the gate was never met (compiled/failed battery).
+func score_color(score: float, passed: int, total: int) -> Color:
+	if total > 0 and passed >= total:
+		return Color(0.35, 0.9, 0.42)
+	if total > 0 and passed >= int(total * 0.5):
+		return Color(1.0, 0.72, 0.2)
+	return Color(1.0, 0.35, 0.35)
+
+
+## Load a model's attempt meta JSON (usage/cost/duration) from its submission
+## dir. Returns {} if missing. `attempt` is 1-indexed.
+func attempt_meta(cfg: Dictionary, name: String, attempt: int = 1) -> Dictionary:
+	if name == "reference":
+		return {}
+	var path: String = submission_path(cfg, name) + "/attempt%d_meta.json" % attempt
+	if not FileAccess.file_exists(path):
+		return {}
+	return JSON.parse_string(FileAccess.get_file_as_string(path)) as Dictionary
+
+
+## Load the scored metadata for this (round, model) from results/all_results.json,
+## keyed by display label. Returns {} if not found.
+func round_result(cfg: Dictionary, name: String) -> Dictionary:
+	if name == "reference":
+		return {}
+	var all_path := "res://results/all_results.json"
+	if not FileAccess.file_exists(all_path):
+		return {}
+	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(all_path))
+	if not (data is Dictionary) or not data.has("rounds"):
+		return {}
+	var label: String = model_label(name)
+	for r in (data as Dictionary)["rounds"]:
+		if int((r as Dictionary)["num"]) != int(cfg["num"]):
+			continue
+		for m in (r as Dictionary)["models"]:
+			if (m as Dictionary).get("label", "") == label:
+				return m as Dictionary
+	return {}
+
 
 func round_cfg(num: int) -> Dictionary:
 	for r in ROUNDS:

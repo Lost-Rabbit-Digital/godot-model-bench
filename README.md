@@ -94,6 +94,20 @@ Each round gets a visualization tailored to its submission type:
 | 6 | The animated character (body + eyes) with moving / attack / auto-demo controls |
 | 7 | Particle burst with flash quad; Burst button + auto-repeat, particle/lifetime readout |
 
+Every submission view is also framed by a **model-identity header + submission metadata
+panel** so you can assess qualitative differences at a glance, not just the passing battery:
+
+- **Model accent color** — each model slug gets a deterministic color (golden-ratio hue
+  spacing) used for the header strip, a swatch, and a subtle tint behind the world, so
+  switching models is visually obvious even when the submission draws nothing.
+- **Score badge** — colored by result: green (full pass), amber (partial pass), red
+  (gate never met — broken/empty battery). Shows `score | passed/total checks | tier`.
+- **Submission metadata block** — pulled live from `attemptN_meta.json` and
+  `results/all_results.json`: cost ($), in/out tokens (+ reasoning-token share), API
+  response time, total wall time (API + eval), gdlint issues, and whether a repair round
+  was used. Lets you tell apart two models that both pass (e.g. cheap+fast vs
+  expensive+slow) before you even look at the world.
+
 The viewer is under `viewer/`:
 
 ```
@@ -102,9 +116,11 @@ viewer/menu.gd
 viewer/stage.tscn         Stage shell (back button, world, error display)
 viewer/stage.gd
 viewer/viewer_state.gd    Autoload: round/mode config + staging (copies a model's
-                          .gd files into the live dir, stripping class_name)
+                          .gd files into the live dir, stripping class_name) +
+                          model label/accent/score lookups + attempt-meta loader
 viewer/drivers/
-  base_driver.gd          Shared driver base (world + control panel layout)
+  base_driver.gd          Shared driver base (world + control panel layout, model
+                          header + metadata block, per-model accent tint)
   round1.gd ... round7.gd Per-round visualization
 ```
 
