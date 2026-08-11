@@ -25,6 +25,8 @@
 | 17 | Nemotron 3.5 Lightning (free) | **10.0** | 0.0 | 0 | 0/1 | 0 | 0 | 0 | 10 | 2 | 82 | 4 | 1000 | 19835 | $0.0000 |
 | 18 | Sakana Namazu | **0.0** | 0.0 | 0 | 1/2 | 0 | 0 | 0 | 0 | 2 | 1 | -1 | 0 | 0 | $0.0000 |
 
+| 19 | Nemotron 3.5 Lightning | **10.0** | 0.0 | 0 | 0/1 | 0 | 0 | 0 | 10 | 2 | 364 | 1 | 1000 | 11422 | $0.0030 |
+| 20 | LFM 2.5 2.6B (free) | **0.0** | 0.0 | 0 | 1/2 | 0 | 0 | 0 | 0 | 2 | 596 | -1 | 1001 | 2470 | $0.0000 |
 ## Per-model failure summary (first attempt)
 
 **x-ai/grok-4.5** (score 100.0)
@@ -123,3 +125,14 @@
 
 **sakana/sakana-namazu** (score 0.0)
   - API blocked: OpenRouter 404 guardrail/data-policy restriction
+
+**nvidia/nemotron-3.5-lightning** (score 10.0)
+  - FAIL  spell_vfx.gd loads/parses  --  load() returned null or unparseable script  [spec]
+  - **Failure categories**:
+    - Missing API: 1
+
+**liquid/lfm-2.5-2.6b:free** (score 0.0)
+  - FAIL  spell_vfx extends Node2D  --  got RefCounted  [logic]
+  - **Failure categories**:
+    - Logic/Spec: 1
+

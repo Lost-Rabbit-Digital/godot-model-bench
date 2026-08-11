@@ -110,6 +110,8 @@ ACTIVE_MODELS += [
     ("upstage/solar-pro4", "Solar Pro 4"),
     ("nvidia/nemotron-3.5-lightning:free", "Nemotron 3.5 Lightning (free)"),
     ("sakana/sakana-namazu", "Sakana Namazu"),
+    ("nvidia/nemotron-3.5-lightning", "Nemotron 3.5 Lightning"),
+    ("liquid/lfm-2.5-2.6b:free", "LFM 2.5 2.6B (free)"),
 ]
 
 # Free tier (OpenRouter :free variants, $0). Trimmed 2026-08 to the two lagunas

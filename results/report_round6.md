@@ -14,6 +14,8 @@
 | 6 | Nemotron 3.5 Lightning (free) | **77.0** | 0.0 | 10 | 15/16 | 10 | 47 | 0 | 10 | 2 | 201 | 0 | 869 | 18097 | $0.0000 |
 | 7 | Sakana Namazu | **0.0** | 0.0 | 0 | 0/0 | 0 | 0 | 0 | 0 | 1 | 40 | -1 | 0 | 0 | $0.0000 |
 
+| 8 | Nemotron 3.5 Lightning | **85.0** | 0.0 | 5 | 16/16 | 10 | 50 | 10 | 10 | 1 | 273 | 6 | 869 | 31062 | $0.0079 |
+| 9 | LFM 2.5 2.6B (free) | **0.0** | 0.0 | 0 | 0/0 | 0 | 0 | 0 | 0 | 1 | 341 | -1 | 847 | 2694 | $0.0000 |
 ## Per-model failure summary (first attempt)
 
 **inclusionai/ling-3.0-flash** (score 100.0)
@@ -35,3 +37,10 @@
 
 **sakana/sakana-namazu** (score 0.0)
   - API blocked: OpenRouter 404 guardrail/data-policy restriction
+
+**nvidia/nemotron-3.5-lightning** (score 85.0)
+  - clean pass
+
+**liquid/lfm-2.5-2.6b:free** (score 0.0) — **no output content**: burned the entire output budget on reasoning
+  - clean pass
+

@@ -23,6 +23,8 @@
 | 14 | Nemotron 3.5 Lightning (free) | **99.0** | 10.0 | 9 | 16/16 | 10 | 50 | 10 | 10 | 1 | 28 | 2 | 1293 | 7803 | $0.0000 |
 | 15 | Sakana Namazu | **0.0** | 0.0 | 0 | 2/4 | 0 | 0 | 0 | 0 | 2 | 0 | -1 | 0 | 0 | $0.0000 |
 
+| 16 | Nemotron 3.5 Lightning | **72.0** | 0.0 | 10 | 10/12 | 10 | 42 | 0 | 10 | 2 | 180 | 0 | 1701 | 7350 | $0.0020 |
+| 17 | LFM 2.5 2.6B (free) | **0.0** | 0.0 | 0 | 2/4 | 0 | 0 | 0 | 0 | 2 | 593 | -1 | 1145 | 2292 | $0.0000 |
 ## Per-model failure summary (first attempt)
 
 **meta/muse-spark-1.2** (score 98.8)
@@ -71,3 +73,16 @@
 
 **sakana/sakana-namazu** (score 0.0)
   - API blocked: OpenRouter 404 "No endpoints available matching your guardrail restrictions and data policy"
+
+**nvidia/nemotron-3.5-lightning** (score 72.0)
+  - FAIL  pegboard.gd loads/parses  --  load failed or unparseable  [spec]
+  - FAIL  bouncy_ball.gd loads/parses  --  load failed or unparseable  [spec]
+  - **Failure categories**:
+    - Missing API: 2
+
+**liquid/lfm-2.5-2.6b:free** (score 0.0)
+  - FAIL  pegboard extends Node2D  --  got RefCounted  [logic]
+  - FAIL  bouncy_ball extends RigidBody2D  --  got RefCounted  [logic]
+  - **Failure categories**:
+    - Logic/Spec: 2
+

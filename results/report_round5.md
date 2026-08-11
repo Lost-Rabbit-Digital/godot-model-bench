@@ -14,6 +14,8 @@
 | 6 | Nemotron 3.5 Lightning (free) | **85.2** | 8.2 | 10 | 17/18 | 10 | 47 | 0 | 10 | 2 | 90 | 0 | 1019 | 9410 | $0.0000 |
 | 7 | Sakana Namazu | **0.0** | 0.0 | 0 | 1/2 | 0 | 0 | 0 | 0 | 2 | 0 | -1 | 0 | 0 | $0.0000 |
 
+| 8 | Nemotron 3.5 Lightning | **72.6** | 3.6 | 7 | 15/18 | 10 | 42 | 0 | 10 | 2 | 276 | 5 | 1394 | 19838 | $0.0051 |
+| 9 | LFM 2.5 2.6B (free) | **0.0** | 0.0 | 0 | 1/2 | 0 | 0 | 0 | 0 | 2 | 602 | -1 | 1011 | 2620 | $0.0000 |
 ## Per-model failure summary (first attempt)
 
 **aion-labs/aion-3.0-mini** (score 97.0)
@@ -35,3 +37,14 @@
 
 **sakana/sakana-namazu** (score 0.0)
   - API blocked: OpenRouter 404 guardrail/data-policy restriction
+
+**nvidia/nemotron-3.5-lightning** (score 72.6)
+  - FAIL  npc_controller.gd loads/parses  --  load() returned null or unparseable script  [spec]
+  - **Failure categories**:
+    - Missing API: 1
+
+**liquid/lfm-2.5-2.6b:free** (score 0.0)
+  - FAIL  npc_controller extends CharacterBody2D  --  got RefCounted  [logic]
+  - **Failure categories**:
+    - Logic/Spec: 1
+

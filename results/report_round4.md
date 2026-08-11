@@ -20,6 +20,8 @@
 | 12 | Nemotron 3.5 Lightning (free) | **10.0** | 0.0 | 0 | 1/2 | 0 | 0 | 0 | 10 | 2 | 200 | 1 | 1541 | 27012 | $0.0000 |
 | 13 | Sakana Namazu | **0.0** | 0.0 | 0 | 2/4 | 0 | 0 | 0 | 0 | 2 | 0 | -1 | 0 | 0 | $0.0000 |
 
+| 14 | Nemotron 3.5 Lightning | **10.0** | 0.0 | 0 | 1/2 | 0 | 0 | 0 | 10 | 2 | 639 | 1 | 1951 | 41700 | $0.0106 |
+| 15 | LFM 2.5 2.6B (free) | **0.0** | 0.0 | 0 | 2/4 | 0 | 0 | 0 | 0 | 2 | 602 | -1 | 1402 | 2314 | $0.0000 |
 ## Per-model failure summary (first attempt)
 
 **google/gemini-3.5-flash-lite** (score 87.0)
@@ -60,3 +62,16 @@
 
 **sakana/sakana-namazu** (score 0.0)
   - API blocked: OpenRouter 404 guardrail/data-policy restriction
+
+**nvidia/nemotron-3.5-lightning** (score 10.0)
+  - FAIL  juice_hud.gd loads/parses  --  load() returned null or unparseable script  [spec]
+  - FAIL  hud_sparkle.gd loads/parses  --  load() returned null or unparseable script  [spec]
+  - **Failure categories**:
+    - Missing API: 2
+
+**liquid/lfm-2.5-2.6b:free** (score 0.0)
+  - FAIL  juice_hud extends Control  --  got RefCounted  [logic]
+  - FAIL  hud_sparkle extends Node2D  --  got RefCounted  [logic]
+  - **Failure categories**:
+    - Logic/Spec: 2
+
