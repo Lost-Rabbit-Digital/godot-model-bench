@@ -12,6 +12,7 @@ var _data: RefCounted
 var _bench_id: String = BenchDataScript.BENCH_GODOT
 var _round: int = 0            # 0 = all rounds aggregated, else specific round
 var _selected_model: Dictionary = {}
+var _sel_index: int = -1       # current row index in the tree (keyboard nav)
 var _vs: Node = null           # ViewerState ref (autoload in normal mode, injected in tests)
 
 # UI refs
@@ -37,9 +38,76 @@ func _ready() -> void:
 
 func _auto_select_first() -> void:
 	if _tree.get_root() != null and _tree.get_root().get_child_count() > 0:
+		_sel_index = 0
 		var item := _tree.get_root().get_child(0)
 		item.select(0)
 		_on_tree_select()
+
+
+# ── Keyboard navigation ──────────────────────────────────────────────────
+# Up/Down        move selection through the model list
+# Left/Right     switch bench (godot -> tool -> translate -> godot)
+# Enter / Space  open the selected godot submission in the interactive viewer
+# 0-7            (godot bench) "all rounds" / round 1-7
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		match event.keycode:
+			KEY_DOWN:
+				_move_tree_selection(1)
+				accept_event()
+			KEY_UP:
+				_move_tree_selection(-1)
+				accept_event()
+			KEY_RIGHT, KEY_TAB:
+				_cycle_bench(1)
+				accept_event()
+			KEY_LEFT:
+				_cycle_bench(-1)
+				accept_event()
+			KEY_ENTER, KEY_SPACE:
+				_open_viewer()
+				accept_event()
+			KEY_0:
+				if _bench_id == BenchDataScript.BENCH_GODOT:
+					_set_round(0)
+					accept_event()
+			KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7:
+				if _bench_id == BenchDataScript.BENCH_GODOT:
+					var r: int = event.keycode - KEY_0
+					_set_round(r)
+					accept_event()
+
+
+func _bench_ids() -> Array:
+	return _data.benches.keys()
+
+
+func _cycle_bench(dir: int) -> void:
+	var ids: Array = _bench_ids()
+	if ids.is_empty():
+		return
+	var idx := ids.find(_bench_id)
+	idx = (idx + dir) % ids.size()
+	if idx < 0:
+		idx += ids.size()
+	_select_bench(str(ids[idx]))
+
+
+func _move_tree_selection(dir: int) -> void:
+	if _tree.get_root() == null:
+		return
+	var count := _tree.get_root().get_child_count()
+	if count == 0:
+		return
+	if _sel_index < 0:
+		_sel_index = 0
+	_sel_index = (_sel_index + dir) % count
+	if _sel_index < 0:
+		_sel_index += count
+	var item := _tree.get_root().get_child(_sel_index)
+	item.select(0)
+	_tree.scroll_to_item(item)
+	_on_tree_select()
 
 
 ## Debug: godot --path . -- --shot /tmp/review.png
@@ -178,6 +246,12 @@ func _build_ui() -> void:
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(_status)
 
+	var hints := Label.new()
+	hints.text = "⌨  ↑/↓ select model · ←/→ switch bench · Enter/␣ open in viewer · 0-7 round (godot only)"
+	hints.add_theme_font_size_override("font_size", 12)
+	hints.add_theme_color_override("font_color", Color(0.55, 0.6, 0.68))
+	root.add_child(hints)
+
 
 # ── Bench + round selection ──────────────────────────────────────────────
 func _select_bench(bench_id: String) -> void:
@@ -223,6 +297,7 @@ func _set_round(r: int) -> void:
 # ── Tree population ──────────────────────────────────────────────────────
 func _populate_tree() -> void:
 	_tree.clear()
+	_sel_index = -1
 	var b: Dictionary = _data.benches.get(_bench_id, {})
 	var models: Array = _data.sorted_models(_bench_id)
 	if _bench_id == BenchDataScript.BENCH_GODOT and _round > 0:
@@ -267,6 +342,7 @@ func _on_tree_select() -> void:
 	var item := _tree.get_selected()
 	if item == null:
 		return
+	_sel_index = item.get_index()
 	var md: Variant = item.get_metadata(0)
 	if md is Dictionary:
 		_selected_model = md
