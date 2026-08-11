@@ -20,6 +20,8 @@
 | 12 | Mistral Medium 3.5 | **10.0** | 0.0 | 0 | 0/1 | 0 | 0 | 0 | 10 | 2 | 11 | 0 | 1001 | 861 | $0.0080 |
 | 13 | Trinity Large Thinking | **10.0** | 0.0 | 0 | 0/1 | 0 | 0 | 0 | 10 | 2 | 101 | 7 | 913 | 2015 | $0.0019 |
 | 14 | Granite 4.1 8B | **0.0** | 0.0 | 0 | 1/2 | 0 | 0 | 0 | 0 | 2 | 672 | -1 | 1039 | 17769 | $0.0018 |
+| 15 | Muse Glimmer 30B | **10.0** | 0.0 | 0 | 0/1 | 0 | 0 | 0 | 10 | 2 | 178 | 0 | 959 | 7738 | $0.0119 |
+| 16 | Solar Pro 4 | **10.0** | 0.0 | 0 | 0/1 | 0 | 0 | 0 | 10 | 2 | 28 | 0 | 991 | 877 | $0.0001 |
 
 ## Per-model failure summary (first attempt)
 
@@ -109,3 +111,8 @@
   - **Failure categories**:
     - Logic/Spec: 1
 
+**meta/muse-glimmer-30b** (score 10.0)
+  - battery never ran (0/1 gate) both attempts
+
+**upstage/solar-pro4** (score 10.0)
+  - battery never ran (0/1 gate) both attempts

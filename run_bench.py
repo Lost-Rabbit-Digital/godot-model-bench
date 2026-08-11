@@ -106,6 +106,8 @@ ACTIVE_MODELS += [
     ("mistralai/mistral-medium-3-5", "Mistral Medium 3.5"),
     ("xiaomi/mimo-v2.5", "Xiaomi MiMo V2.5"),
     ("arcee-ai/trinity-large-thinking", "Trinity Large Thinking"),
+    ("meta/muse-glimmer-30b", "Muse Glimmer 30B"),
+    ("upstage/solar-pro4", "Solar Pro 4"),
 ]
 
 # Free tier (OpenRouter :free variants, $0). Trimmed 2026-08 to the two lagunas

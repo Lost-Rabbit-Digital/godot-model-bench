@@ -15,6 +15,8 @@
 | 7 | Tencent Hy3 | **78.0** | 0.0 | 10 | 26/27 | 10 | 48 | 0 | 10 | 2 | 469 | 0 | 1759 | 14098 | $0.0077 |
 | 8 | Qwen3.7 Flash | **10.0** | 0.0 | 0 | 1/2 | 0 | 0 | 0 | 10 | 2 | 127 | 0 | 1549 | 11200 | $0.0015 |
 | 9 | Laguna S 2.1 | **10.0** | 0.0 | 0 | 1/2 | 0 | 0 | 0 | 10 | 2 | 26 | 0 | 1554 | 1076 | $0.0003 |
+| 10 | Muse Glimmer 30B | **10.0** | 0.0 | 0 | 1/2 | 0 | 0 | 0 | 10 | 2 | 288 | 0 | 1489 | 6836 | $0.0108 |
+| 11 | Solar Pro 4 | **10.0** | 0.0 | 0 | 1/2 | 0 | 0 | 0 | 10 | 2 | 29 | 0 | 1548 | 1020 | $0.0002 |
 
 ## Per-model failure summary (first attempt)
 
@@ -46,3 +48,8 @@
 **poolside/laguna-s-2.1** (score 10.0)
   - FAIL  juice_hud.gd loads/parses  --  load() returned null or unparseable script
 
+**meta/muse-glimmer-30b** (score 10.0)
+  - battery never ran (1/2 gate) both attempts
+
+**upstage/solar-pro4** (score 10.0)
+  - battery never ran (1/2 gate) both attempts

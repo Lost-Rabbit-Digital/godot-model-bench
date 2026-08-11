@@ -18,6 +18,8 @@
 | 9 | DeepSeek V4 Flash | **86.8** | 6.8 | 10 | 16/16 | 10 | 50 | 0 | 10 | 2 | 42 | 0 | 1474 | 1830 | $0.0004 |
 | 10 | Qwen3.7 Flash | **78.4** | 1.4 | 7 | 16/16 | 10 | 50 | 0 | 10 | 2 | 100 | 4 | 1755 | 6260 | $0.0009 |
 | 11 | Laguna S 2.1 | **77.4** | 6.4 | 10 | 13/16 | 10 | 41 | 0 | 10 | 2 | 47 | 0 | 1249 | 760 | $0.0002 |
+| 12 | Muse Glimmer 30B | **80.0** | 0.0 | 10 | 16/16 | 10 | 50 | 0 | 10 | 2 | 281 | 0 | 1426 | 12499 | $0.0189 |
+| 13 | Solar Pro 4 | **10.0** | 0.0 | 0 | 3/4 | 0 | 0 | 0 | 10 | 2 | 20 | 9 | 1272 | 768 | $0.0001 |
 
 ## Per-model failure summary (first attempt)
 
@@ -56,4 +58,9 @@
 **poolside/laguna-s-2.1** (score 77.4)
   - FAIL  balls spread horizontally from pegs (x-range > 120)  --  too few in-bounds samples=14
   - FAIL  loop recycled balls (signal fired)  --  recycled=0
-  - FAIL  no balls stuck below LOOP_Y  --  stuck=200
+  - FAIL  no balls stuck below LOOP_Y  --  stuck=200**meta/muse-glimmer-30b** (score 80.0)
+  - repair round needed (attempt 1 incomplete battery)
+  - clean pass on attempt 2 (16/16)
+
+**upstage/solar-pro4** (score 10.0)
+  - repair round: battery still incomplete (3/4 checks attempt 1, gate not met)
