@@ -111,9 +111,15 @@ panel** so you can assess qualitative differences at a glance, not just the pass
 The viewer is under `viewer/`:
 
 ```
-viewer/menu.tscn          Main menu (round selector + model list)
+viewer/review.tscn         REVIEW CONSOLE (main scene): cross-bench scoreboard
+viewer/review.gd           loads all 3 benches (godot + sibling tool-use +
+                           translate repos), bench/round selector, metadata
+                           panel, handoff into the interactive submission viewer
+viewer/bench_data.gd       cross-bench results loader (normalizes each bench's
+                           all_results.json into a common model shape)
+viewer/menu.tscn           Main menu (round selector + model list)
 viewer/menu.gd
-viewer/stage.tscn         Stage shell (back button, world, error display)
+viewer/stage.tscn          Stage shell (back button, world, error display)
 viewer/stage.gd
 viewer/viewer_state.gd    Autoload: round/mode config + staging (copies a model's
                           .gd files into the live dir, stripping class_name) +
@@ -123,6 +129,27 @@ viewer/drivers/
                           header + metadata block, per-model accent tint)
   round1.gd ... round7.gd Per-round visualization
 ```
+
+### Review Console
+
+The app opens on the **Review Console** (`review.tscn`), a cross-bench results
+browser that reads all three benchmark repos in one place:
+
+- **Bench selector** — Godot / Tool-Use / Translate (the latter two resolved as
+  sibling repos of `godot-model-bench`, so `bench_data.gd` reads their
+  `results/all_results.json` directly).
+- **Scoreboard** (`Tree`) — every model with its accent color, score, cost,
+  in/out tokens and wall time. For the godot bench, a round selector (1-7 or
+  "all") filters the field.
+- **Detail panel** — score badge (green/amber/red), cost, tokens, wall time,
+  per-round scores, per-language averages (translate), projected cost.
+- **"Open in interactive viewer"** (godot bench only) — stages the selected
+  model into the round's live dir and drops into `stage.tscn`, where you can
+  watch the actual submission run — scoreboard + qualitative eyeball in one
+  flow. The sequence viewer menu has a button back to the console.
+
+The cross-bench loader (`bench_data.gd`) is bench-agnostic: add a new bench by
+adding a loader that pushes `{rounds, models}` into `benches`.
 
 Notes:
 - The viewer writes the selected model's files to the round's live dir

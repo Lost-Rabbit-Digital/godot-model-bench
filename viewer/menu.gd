@@ -56,6 +56,13 @@ func _build_ui() -> void:
 	sub.text = "Pick a round, then a model.  Reference = the human-written solution."
 	sub.add_theme_font_size_override("font_size", 14)
 	root.add_child(sub)
+	var nav := HBoxContainer.new()
+	nav.add_theme_constant_override("separation", 8)
+	root.add_child(nav)
+	var to_review := Button.new()
+	to_review.text = "↩ Review console (all benches)"
+	to_review.pressed.connect(func(): get_tree().change_scene_to_file("res://viewer/review.tscn"))
+	nav.add_child(to_review)
 
 	var hbox := HBoxContainer.new()
 	hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
